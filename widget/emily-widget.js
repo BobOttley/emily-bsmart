@@ -171,6 +171,15 @@
           <input type="text" id="emily-input" placeholder="Ask a question..." />
           <button id="emily-send">Send</button>
         </div>
+
+        <!-- Privacy Footer -->
+        <div id="emily-privacy-footer">
+          <a href="https://www.bsmart-ai.com/privacy" target="_blank">Privacy Policy</a>
+          <span>•</span>
+          <a href="https://www.bsmart-ai.com/terms" target="_blank">Terms</a>
+          <span>•</span>
+          <span>Powered by bSMART AI</span>
+        </div>
       </div>
 
       <!-- Voice Consent Modal -->
@@ -298,7 +307,7 @@
       hideThinking();
 
       if (data.response) {
-        addMessage('bot', data.response);
+        addMessage('bot', data.response, true); // Enable contextual buttons
         sessionId = data.session_id || sessionId;
       }
     } catch (err) {
@@ -307,13 +316,104 @@
     }
   }
 
-  function addMessage(role, text) {
+  function addMessage(role, text, showContextButtons = false) {
     const history = document.getElementById('emily-chat-history');
     const msg = document.createElement('div');
     msg.className = `emily-msg emily-msg--${role}`;
-    msg.innerHTML = `<p>${escapeHtml(text)}</p>`;
+
+    // Format the message with better structure
+    const formattedText = formatMessage(text);
+    msg.innerHTML = formattedText;
     history.appendChild(msg);
+
+    // Add contextual quick replies after bot messages
+    if (role === 'bot' && showContextButtons) {
+      const contextButtons = getContextualButtons(text);
+      if (contextButtons.length > 0) {
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'emily-context-buttons';
+        buttonsDiv.innerHTML = contextButtons.map(btn =>
+          `<button class="emily-context-btn" data-q="${escapeHtml(btn.query)}">${escapeHtml(btn.label)}</button>`
+        ).join('');
+        history.appendChild(buttonsDiv);
+
+        // Attach click handlers
+        buttonsDiv.querySelectorAll('.emily-context-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.getElementById('emily-input').value = btn.dataset.q;
+            sendMessage();
+          });
+        });
+      }
+    }
+
     history.scrollTop = history.scrollHeight;
+  }
+
+  function formatMessage(text) {
+    // Convert numbered lists to formatted HTML
+    let formatted = escapeHtml(text);
+
+    // Convert patterns like "1. SMART Prospectus - description" to formatted items
+    formatted = formatted.replace(/(\d+)\.\s+(SMART\s+\w+)\s*[-–]\s*([^.!?]+[.!?]?)/g,
+      '<div class="emily-product-item"><span class="emily-product-num">$1.</span> <strong>$2</strong> - $3</div>');
+
+    // Convert remaining numbered items
+    formatted = formatted.replace(/(\d+)\.\s+([^.!?\n]+[.!?]?)/g,
+      '<div class="emily-list-item"><span class="emily-item-num">$1.</span> $2</div>');
+
+    // Wrap non-list content in paragraphs
+    if (!formatted.includes('emily-product-item') && !formatted.includes('emily-list-item')) {
+      formatted = `<p>${formatted}</p>`;
+    }
+
+    return formatted;
+  }
+
+  function getContextualButtons(responseText) {
+    const contextReplies = schoolConfig?.contextualReplies || {};
+    const text = responseText.toLowerCase();
+
+    // Detect topic from response and return relevant buttons
+    if (text.includes('8 smart products') || text.includes('eight smart') ||
+        (text.includes('smart prospectus') && text.includes('smart chat') && text.includes('smart voice'))) {
+      return contextReplies.products || [];
+    }
+
+    if (text.includes('connects') || text.includes('integration') || text.includes('shared database') ||
+        text.includes('seamless') || text.includes('touchpoint')) {
+      return contextReplies.integration || [];
+    }
+
+    if (text.includes('security') || text.includes('gdpr') || text.includes('data protection') ||
+        text.includes('encrypted') || text.includes('compliant')) {
+      return contextReplies.security || [];
+    }
+
+    if (text.includes('pricing') || text.includes('cost') || text.includes('price') ||
+        text.includes('£') || text.includes('per pupil')) {
+      return contextReplies.pricing || [];
+    }
+
+    if (text.includes('demo') || text.includes('bob') || text.includes('meeting') ||
+        text.includes('arrange') || text.includes('book')) {
+      return contextReplies.booking || [];
+    }
+
+    if (text.includes('implementation') || text.includes('weeks') || text.includes('timeline') ||
+        text.includes('go live') || text.includes('migration')) {
+      return contextReplies.implementation || [];
+    }
+
+    // Check for individual product mentions (deep dive)
+    const products = ['prospectus', 'chat', 'voice', 'phone', 'crm', 'email', 'booking', 'analytics'];
+    const mentionedProducts = products.filter(p => text.includes(`smart ${p}`));
+    if (mentionedProducts.length === 1) {
+      return contextReplies.productDeep || [];
+    }
+
+    // Default to general follow-ups
+    return contextReplies.general || [];
   }
 
   function showThinking() {
@@ -749,6 +849,56 @@
         filter: brightness(1.1);
       }
 
+      /* Contextual Buttons (after bot messages) */
+      .emily-context-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+      }
+      .emily-context-btn {
+        padding: 6px 12px;
+        background: #fff;
+        color: var(--emily-primary);
+        font-size: 11px;
+        border-radius: 16px;
+        border: 1px solid var(--emily-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .emily-context-btn:hover {
+        background: var(--emily-primary);
+        color: #fff;
+      }
+
+      /* Formatted Message Content */
+      .emily-product-item,
+      .emily-list-item {
+        display: flex;
+        gap: 6px;
+        padding: 6px 0;
+        line-height: 1.4;
+      }
+      .emily-product-num,
+      .emily-item-num {
+        color: var(--emily-primary);
+        font-weight: bold;
+        min-width: 20px;
+      }
+      .emily-product-item strong {
+        color: var(--emily-primary);
+      }
+      .emily-msg--bot .emily-product-item,
+      .emily-msg--bot .emily-list-item {
+        border-bottom: 1px solid #eee;
+      }
+      .emily-msg--bot .emily-product-item:last-child,
+      .emily-msg--bot .emily-list-item:last-child {
+        border-bottom: none;
+      }
+
       /* Input */
       #emily-input-container {
         display: flex;
@@ -776,6 +926,27 @@
         transition: background 0.2s ease;
       }
       #emily-send:hover { filter: brightness(1.1); }
+
+      /* Privacy Footer */
+      #emily-privacy-footer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        background: #f5f5f5;
+        border-top: 1px solid #e0e0e0;
+        font-size: 11px;
+        color: #888;
+      }
+      #emily-privacy-footer a {
+        color: #666;
+        text-decoration: none;
+      }
+      #emily-privacy-footer a:hover {
+        color: var(--emily-primary);
+        text-decoration: underline;
+      }
 
       /* Voice Consent Modal */
       #emily-voice-consent {

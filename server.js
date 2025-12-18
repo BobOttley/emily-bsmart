@@ -407,7 +407,8 @@ app.get('/widget/:schoolId/emily.js', (req, res) => {
     theme: school.theme,
     contact: school.contact,
     personality: school.emilyPersonality,
-    quickReplies: school.quickReplies
+    quickReplies: school.quickReplies,
+    contextualReplies: school.contextualReplies
   });
 
   widgetCode = widgetCode.replace('__SCHOOL_CONFIG__', schoolConfig);
@@ -519,10 +520,15 @@ CONTACT:
 - Bob Ottley (Founder): bob.ottley@bsmart-ai.com
 
 DEMO BOOKING RULES:
-- When someone wants to book a demo, ask for their details ONE TIME ONLY
-- Request: name, email, school name, and role
-- NEVER repeat the same question
-- Once you have name, email, and school - call the book_demo function immediately
+- When someone wants to book a demo, you MUST collect ALL of the following:
+  1. Their name
+  2. Their email address
+  3. Their school name
+  4. Their role (e.g. Head, Registrar, Marketing)
+  5. Which SMART products they're interested in (THIS IS REQUIRED - ask "Which of our products are you most interested in?")
+- Ask for missing details ONE AT A TIME in a conversational way
+- NEVER call book_demo until you have ALL five pieces of information
+- If they say "all products" or are unsure, that's fine - just record that
 
 GENERAL RULES:
 - Never make up information
