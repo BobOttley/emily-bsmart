@@ -152,42 +152,17 @@ app.post('/api/:schoolId/realtime/session', async (req, res) => {
         tools: [
           {
             type: 'function',
-            name: 'get_prospectus_section',
-            description: 'Retrieve content from a specific section of the family\'s personalised prospectus for audio narration. Use when discussing any topic covered in the prospectus.',
-            parameters: {
-              type: 'object',
-              properties: {
-                section: {
-                  type: 'string',
-                  description: 'The prospectus section ID to retrieve'
-                }
-              },
-              required: ['section']
-            }
-          },
-          {
-            type: 'function',
             name: 'kb_search',
-            description: 'Search the school knowledge base for factual information about fees, admissions, curriculum, facilities, staff, or any other school information.',
+            description: 'Search the bSMART AI knowledge base for information about SMART products, pricing, implementation, or how bSMART works.',
             parameters: {
               type: 'object',
               properties: {
                 query: {
                   type: 'string',
-                  description: 'Search query for the knowledge base'
+                  description: 'Search query about bSMART products or services'
                 }
               },
               required: ['query']
-            }
-          },
-          {
-            type: 'function',
-            name: 'get_open_days',
-            description: 'Fetch LIVE open day, visit, and tour dates from the school website. Use this when asked about upcoming open mornings, visits, tours, or how to book a visit. This gets real-time data.',
-            parameters: {
-              type: 'object',
-              properties: {},
-              required: []
             }
           }
         ]
@@ -313,7 +288,7 @@ app.post('/api/:schoolId/realtime/tool/kb_search', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: `You are a helpful assistant answering questions about ${school.name}. Use ONLY the following knowledge base to answer. Be concise (2-3 sentences). Use British English.\n\nKNOWLEDGE BASE:\n${knowledgeBase}`
+          content: `You are Emily, a helpful assistant for bSMART AI. Answer questions about SMART products using ONLY the knowledge base below. Be concise (2-3 sentences). Use British English.\n\nKNOWLEDGE BASE:\n${knowledgeBase}`
         },
         {
           role: 'user',
