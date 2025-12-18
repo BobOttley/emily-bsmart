@@ -137,11 +137,45 @@ function logEmailStatus() {
  * @param {string} details.school - School name
  * @param {string} details.role - Contact role
  * @param {string} details.interests - Products interested in
+ * @param {Array} details.conversation - Chat history array [{role, content}]
  * @param {string} source - Where the lead came from (e.g. 'Chat', 'Voice')
  * @returns {string} HTML email body
  */
 function buildDemoRequestEmail(details, source = 'Website') {
-  const { name, email, school, role, interests } = details;
+  const { name, email, school, role, interests, conversation } = details;
+
+  // Build conversation HTML if provided
+  let conversationHtml = '';
+  if (conversation && conversation.length > 0) {
+    const messages = conversation.map(msg => {
+      const isUser = msg.role === 'user';
+      const bgColor = isUser ? '#e8f4f8' : '#fff8e8';
+      const label = isUser ? '👤 Visitor' : '🤖 Emily';
+      const borderColor = isUser ? '#034674' : '#FF9F1C';
+      return `
+        <div style="margin-bottom: 10px; padding: 12px; background-color: ${bgColor}; border-left: 3px solid ${borderColor}; border-radius: 4px;">
+          <div style="font-size: 11px; color: #666; margin-bottom: 4px; font-weight: bold;">${label}</div>
+          <div style="font-size: 14px; color: #333; line-height: 1.4;">${msg.content}</div>
+        </div>
+      `;
+    }).join('');
+
+    conversationHtml = `
+      <!-- Conversation History -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 30px;">
+        <tr>
+          <td>
+            <h3 style="margin: 0 0 15px; color: #091825; font-size: 16px; border-bottom: 2px solid #FF9F1C; padding-bottom: 8px;">
+              💬 Conversation History
+            </h3>
+            <div style="max-height: 400px; overflow-y: auto; padding: 10px; background-color: #fafafa; border-radius: 8px;">
+              ${messages}
+            </div>
+          </td>
+        </tr>
+      </table>
+    `;
+  }
 
   return `
 <!DOCTYPE html>
@@ -224,13 +258,15 @@ function buildDemoRequestEmail(details, source = 'Website') {
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 30px;">
                 <tr>
                   <td align="center">
-                    <a href="mailto:${email}?subject=bSMART%20Demo%20Follow-up&body=Hi%20${encodeURIComponent(name)},%0A%0AThank%20you%20for%20your%20interest%20in%20bSMART%20AI.%20I'd%20love%20to%20arrange%20a%20demo%20for%20you.%0A%0ABest%20regards,%0ABob"
+                    <a href="mailto:${email}?subject=bSMART%20Demo%20Follow-up&body=Hi%20${encodeURIComponent(name || '')},%0A%0AThank%20you%20for%20your%20interest%20in%20bSMART%20AI.%20I'd%20love%20to%20arrange%20a%20demo%20for%20you.%0A%0ABest%20regards,%0ABob"
                        style="display: inline-block; background-color: #FF9F1C; color: #091825; padding: 14px 40px; font-size: 16px; font-weight: bold; text-decoration: none; border-radius: 6px;">
                       Reply to ${name?.split(' ')[0] || 'Lead'}
                     </a>
                   </td>
                 </tr>
               </table>
+
+              ${conversationHtml}
             </td>
           </tr>
 

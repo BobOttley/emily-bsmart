@@ -113,13 +113,14 @@ router.post('/', async (req, res) => {
         // Log the demo request
         console.log(`Demo request from chat: ${functionArgs.name} (${functionArgs.email}) at ${functionArgs.school}`);
 
-        // Send branded notification email
+        // Send branded notification email with conversation history
         const emailBody = buildDemoRequestEmail({
           name: functionArgs.name,
           email: functionArgs.email,
           school: functionArgs.school,
           role: functionArgs.role,
-          interests: functionArgs.interests
+          interests: functionArgs.interests,
+          conversation: conversation.messages // Include chat history
         }, 'Chat');
 
         const emailResult = await sendNotificationEmail(
