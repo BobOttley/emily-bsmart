@@ -13,24 +13,29 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 
-// Email configuration
-const GMAIL_USER = process.env.GMAIL_USER || 'bob.ottley@bsmart-ai.com';
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+// Email configuration (Microsoft 365)
+const EMAIL_USER = process.env.EMAIL_USER || 'bob.ottley@bsmart-ai.com';
+const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;
 const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || 'bob.ottley@bsmart-ai.com';
 
-// Email transporter
+// Email transporter - Microsoft 365
 let emailTransporter = null;
-if (GMAIL_APP_PASSWORD) {
+if (EMAIL_PASSWORD) {
   emailTransporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.office365.com',
+    port: 587,
+    secure: false,
     auth: {
-      user: GMAIL_USER,
-      pass: GMAIL_APP_PASSWORD
+      user: EMAIL_USER,
+      pass: EMAIL_PASSWORD
+    },
+    tls: {
+      ciphers: 'SSLv3'
     }
   });
-  console.log('Email notifications enabled');
+  console.log('Email notifications enabled (Microsoft 365)');
 } else {
-  console.log('Email notifications disabled - no GMAIL_APP_PASSWORD set');
+  console.log('Email notifications disabled - no EMAIL_PASSWORD set');
 }
 
 // Send notification email to Bob
