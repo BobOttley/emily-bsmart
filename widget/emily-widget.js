@@ -780,9 +780,9 @@
       .emily-msg--user {
         margin-left: auto;
         text-align: right;
-        background: var(--emily-primary);
-        color: #fff;
-        border-color: var(--emily-primary);
+        background: #e8e8e8;
+        color: #333;
+        border-color: #ddd;
       }
       .emily-msg--bot {
         text-align: left;
