@@ -11,90 +11,12 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
-const nodemailer = require('nodemailer');
 
-// Microsoft Graph API Email configuration
-const MS_TENANT_ID = process.env.MS_TENANT_ID;
-const MS_CLIENT_ID = process.env.MS_CLIENT_ID;
-const MS_CLIENT_SECRET = process.env.MS_CLIENT_SECRET;
-const MS_SENDER_EMAIL = process.env.MS_SENDER_EMAIL || process.env.EMAIL_FROM;
-const NOTIFICATION_EMAILS = process.env.NOTIFICATION_EMAILS || 'bob.ottley@bsmart-ai.com,info@bsmart-ai.com';
+// Import shared email utility
+const { sendNotificationEmail, logEmailStatus } = require('./utils/email');
 
-// Get Microsoft Graph access token
-async function getMsGraphToken() {
-  const tokenUrl = `https://login.microsoftonline.com/${MS_TENANT_ID}/oauth2/v2.0/token`;
-
-  const params = new URLSearchParams();
-  params.append('client_id', MS_CLIENT_ID);
-  params.append('client_secret', MS_CLIENT_SECRET);
-  params.append('scope', 'https://graph.microsoft.com/.default');
-  params.append('grant_type', 'client_credentials');
-
-  const response = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params
-  });
-
-  const data = await response.json();
-  return data.access_token;
-}
-
-// Send notification email via Microsoft Graph
-async function sendNotificationEmail(subject, body) {
-  if (!MS_TENANT_ID || !MS_CLIENT_ID || !MS_CLIENT_SECRET) {
-    console.log('Microsoft Graph not configured - would send:', subject);
-    return { success: false, error: 'Email not configured' };
-  }
-
-  try {
-    const token = await getMsGraphToken();
-
-    const emailData = {
-      message: {
-        subject: `[bSMART Emily] ${subject}`,
-        body: {
-          contentType: 'HTML',
-          content: body
-        },
-        toRecipients: NOTIFICATION_EMAILS.split(',').map(email => ({
-          emailAddress: { address: email.trim() }
-        }))
-      },
-      saveToSentItems: false
-    };
-
-    const response = await fetch(
-      `https://graph.microsoft.com/v1.0/users/${MS_SENDER_EMAIL}/sendMail`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(emailData)
-      }
-    );
-
-    if (response.ok || response.status === 202) {
-      console.log('Notification email sent via Microsoft Graph:', subject);
-      return { success: true };
-    } else {
-      const err = await response.text();
-      console.error('Microsoft Graph email error:', err);
-      return { success: false, error: err };
-    }
-  } catch (err) {
-    console.error('Email error:', err);
-    return { success: false, error: err.message };
-  }
-}
-
-if (MS_TENANT_ID && MS_CLIENT_ID && MS_CLIENT_SECRET) {
-  console.log('Email notifications enabled (Microsoft Graph)');
-} else {
-  console.log('Email notifications disabled - Microsoft Graph not configured');
-}
+// Log email configuration status
+logEmailStatus();
 
 // Import routes
 const chatRoutes = require('./routes/chat');
