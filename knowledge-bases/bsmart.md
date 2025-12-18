@@ -110,6 +110,6 @@ Manages all admissions events — open days, private tours, taster days.
 
 ## Contact
 
-- Email: hello@bsmart-ai.com
-- Demo: Ask Emily to arrange one
+- Email: info@bsmart-ai.com
+- Demo: Click "Book Demo" button or ask Emily
 - Bob Ottley: bob.ottley@bsmart-ai.com

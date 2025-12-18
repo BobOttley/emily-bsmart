@@ -17,7 +17,7 @@ const schools = {
       text: '#2C3E50'
     },
     contact: {
-      email: 'hello@bsmart-ai.com',
+      email: 'info@bsmart-ai.com',
       phone: '+44 7867 803275',
       website: 'www.bsmart-ai.com'
     },

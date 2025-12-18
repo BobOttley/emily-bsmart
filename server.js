@@ -549,7 +549,7 @@ PRODUCTS (7 SMART products):
 7. SMART Booking - Tour and event booking
 
 CONTACT:
-- Email: hello@bsmart-ai.com
+- Email: info@bsmart-ai.com
 - Bob Ottley: bob.ottley@bsmart-ai.com
 
 RULES:
