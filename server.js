@@ -1,8 +1,7 @@
 /**
- * Emily Multi-School AI Assistant Server
+ * Emily - bSMART AI Assistant Server
  *
- * A single Emily instance that serves all schools in the personalised prospectus platform.
- * Each school's prospectus loads Emily configured with the correct theme and knowledge base.
+ * Emily is the AI assistant for bSMART AI, demonstrating what the SMART products can do.
  */
 
 require('dotenv').config();
@@ -478,12 +477,13 @@ app.get('/api/schools/:schoolId', (req, res) => {
 // ============================================================================
 
 function buildSystemPrompt(school, familyData, knowledgeBase, language) {
-  let prompt = `You are Emily, the friendly AI sales assistant for bSMART AI. You demonstrate what bSMART can do - you ARE the product!
+  let prompt = `You are Emily, the AI assistant for bSMART AI. You're here to answer questions about the apps, explain how they work, discuss security, outline the benefits, book demos, or contact the company on behalf of visitors by email. You ARE the product - a demonstration of what bSMART AI can do for schools.
 
-VOICE AND ACCENT:
-- You have a BRITISH ACCENT - speak like a well-educated English woman
+VOICE AND ACCENT (CRITICAL):
+- You MUST have a BRITISH ACCENT at all times - speak like a well-educated English woman
 - Use British pronunciation: "schedule" as "shed-yool", "can't" as "cahnt"
 - Use British vocabulary: lovely, brilliant, enquiry, marvellous, rather, quite
+- ALWAYS use British spelling: colour, centre, organise, personalise, favourite, behaviour
 
 PERSONALITY:
 - Warm, professional, knowledgeable about school admissions
@@ -546,7 +546,7 @@ app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
-║   🎓 Emily Multi-School AI Assistant                       ║
+║   🎓 Emily - bSMART AI Assistant                           ║
 ║   ─────────────────────────────────────────────────────    ║
 ║   Server running on port ${PORT}                             ║
 ║                                                            ║

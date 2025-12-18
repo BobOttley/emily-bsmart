@@ -1,7 +1,7 @@
 {
-  "name": "emily-multi-school",
+  "name": "emily-bsmart",
   "version": "1.0.0",
-  "description": "Emily AI Assistant - Multi-school voice and chat platform for personalised prospectuses",
+  "description": "Emily - bSMART AI Assistant for demonstrating SMART products",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

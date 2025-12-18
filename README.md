@@ -1,10 +1,10 @@
-# Emily Multi-School AI Assistant
+# Emily - bSMART AI Assistant
 
-Emily is an AI-powered assistant that serves multiple schools from a single instance. When any school's prospectus loads, Emily appears configured with that school's theme, knowledge base, and personality.
+Emily is the AI assistant for bSMART AI. She answers questions about the SMART apps, explains how they work, discusses security, outlines benefits, books demos, and contacts the company on behalf of visitors.
 
 ## Features
 
-- **Multi-School Support**: One Emily instance serves CLC, Brighton College, BCPK, and Clifton College
+- **bSMART Product Demo**: Emily demonstrates what bSMART AI can do for schools
 - **Voice Conversations**: Real-time voice chat using OpenAI's Realtime API
 - **Text Chat**: Standard text-based chat with GPT-4o-mini
 - **Audio Tours**: Personalised audio narration of prospectus sections
