@@ -365,7 +365,8 @@ app.post('/api/:schoolId/realtime/tool/book_demo', async (req, res) => {
 
   const emailResult = await sendNotificationEmail(
     `Demo Request: ${name} from ${school || 'Unknown School'}`,
-    emailBody
+    emailBody,
+    email // CC the person
   );
 
   res.json({

@@ -139,7 +139,8 @@ router.post('/', async (req, res) => {
 
         const emailResult = await sendNotificationEmail(
           `Demo Request: ${functionArgs.name} from ${functionArgs.school || 'Unknown School'}`,
-          emailBody
+          emailBody,
+          functionArgs.email // CC the person
         );
 
         // Send notification and get response
@@ -183,7 +184,8 @@ router.post('/', async (req, res) => {
 
         const emailResult = await sendNotificationEmail(
           `Enquiry: ${functionArgs.name} from ${functionArgs.school || 'Unknown'}`,
-          emailBody
+          emailBody,
+          functionArgs.email // CC the person
         );
 
         const contactResult = {

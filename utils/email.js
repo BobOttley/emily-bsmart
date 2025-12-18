@@ -63,9 +63,10 @@ async function getMsGraphToken() {
  * Send notification email via Microsoft Graph
  * @param {string} subject - Email subject (will be prefixed with [bSMART Emily])
  * @param {string} body - HTML email body
+ * @param {string} [ccEmail] - Optional email to CC (e.g., the person who submitted)
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-async function sendNotificationEmail(subject, body) {
+async function sendNotificationEmail(subject, body, ccEmail = null) {
   if (!isEmailConfigured()) {
     console.log('Microsoft Graph not configured - would send:', subject);
     return { success: false, error: 'Email not configured' };
@@ -91,6 +92,13 @@ async function sendNotificationEmail(subject, body) {
       },
       saveToSentItems: false
     };
+
+    // Add CC if provided
+    if (ccEmail) {
+      emailData.message.ccRecipients = [
+        { emailAddress: { address: ccEmail } }
+      ];
+    }
 
     const response = await fetch(
       `https://graph.microsoft.com/v1.0/users/${MS_SENDER_EMAIL}/sendMail`,
