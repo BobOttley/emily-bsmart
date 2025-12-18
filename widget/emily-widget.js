@@ -126,12 +126,6 @@
     const container = document.createElement('div');
     container.id = 'emily-widget';
     container.innerHTML = `
-      <!-- Welcome Bubble -->
-      <div id="emily-welcome-bubble">
-        <button id="emily-bubble-close" aria-label="Close">&times;</button>
-        <p>Hello${familyContext.parent_name ? ' ' + familyContext.parent_name : ''}! I'm Emily, your personal guide to ${familyContext.child_name ? familyContext.child_name + "'s" : 'the'} prospectus. Click here to start your audio tour!</p>
-      </div>
-
       <!-- ASK EMILY Toggle Button -->
       <div id="emily-toggle" aria-label="Open chat">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -158,9 +152,7 @@
 
         <!-- Welcome -->
         <div id="emily-welcome">
-          Hi! I'm Emily, your AI guide to ${schoolConfig.name || 'the school'}.
-          <br><br>
-          Click <strong>"Start Audio Tour"</strong> below and I'll narrate your personalised prospectus for you.
+          Hello! I'm Emily from bSMART AI. How can I help you today?
         </div>
 
         <!-- Chat History -->
@@ -171,7 +163,6 @@
 
         <!-- Quick Replies -->
         <div id="emily-quick-replies">
-          <button class="emily-quick emily-quick--highlight">Start Audio Tour</button>
           ${getQuickRepliesHtml()}
         </div>
 
