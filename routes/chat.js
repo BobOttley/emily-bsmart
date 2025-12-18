@@ -12,7 +12,7 @@ const path = require('path');
 const OpenAI = require('openai');
 
 // Import shared email utility
-const { sendNotificationEmail } = require('../utils/email');
+const { sendNotificationEmail, buildDemoRequestEmail } = require('../utils/email');
 
 // Initialize OpenAI client (deferred to allow server to start without API key)
 let openai = null;
@@ -113,17 +113,14 @@ router.post('/', async (req, res) => {
         // Log the demo request
         console.log(`Demo request from chat: ${functionArgs.name} (${functionArgs.email}) at ${functionArgs.school}`);
 
-        // Send notification email to Bob via Microsoft Graph
-        const emailBody = `
-          <h2>New Demo Request from bSMART Website (Chat)</h2>
-          <p><strong>Name:</strong> ${functionArgs.name}</p>
-          <p><strong>Email:</strong> ${functionArgs.email}</p>
-          <p><strong>School:</strong> ${functionArgs.school || 'Not provided'}</p>
-          <p><strong>Role:</strong> ${functionArgs.role || 'Not provided'}</p>
-          <p><strong>Interested in:</strong> ${functionArgs.interests || 'Not specified'}</p>
-          <hr>
-          <p><em>This lead was captured by Emily via text chat on the bSMART website.</em></p>
-        `;
+        // Send branded notification email
+        const emailBody = buildDemoRequestEmail({
+          name: functionArgs.name,
+          email: functionArgs.email,
+          school: functionArgs.school,
+          role: functionArgs.role,
+          interests: functionArgs.interests
+        }, 'Chat');
 
         const emailResult = await sendNotificationEmail(
           `Demo Request: ${functionArgs.name} from ${functionArgs.school || 'Unknown School'}`,

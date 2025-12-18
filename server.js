@@ -12,7 +12,7 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 // Import shared email utility
-const { sendNotificationEmail, logEmailStatus } = require('./utils/email');
+const { sendNotificationEmail, logEmailStatus, buildDemoRequestEmail } = require('./utils/email');
 
 // Log email configuration status
 logEmailStatus();
@@ -360,17 +360,8 @@ app.post('/api/:schoolId/realtime/tool/book_demo', async (req, res) => {
 
   console.log(`Demo request from ${name} (${email}) at ${school}`);
 
-  // Send notification email to Bob
-  const emailBody = `
-    <h2>New Demo Request from bSMART Website</h2>
-    <p><strong>Name:</strong> ${name}</p>
-    <p><strong>Email:</strong> ${email}</p>
-    <p><strong>School:</strong> ${school || 'Not provided'}</p>
-    <p><strong>Role:</strong> ${role || 'Not provided'}</p>
-    <p><strong>Interested in:</strong> ${interests || 'Not specified'}</p>
-    <hr>
-    <p><em>This lead was captured by Emily on the bSMART website.</em></p>
-  `;
+  // Send branded notification email
+  const emailBody = buildDemoRequestEmail({ name, email, school, role, interests }, 'Voice');
 
   const emailResult = await sendNotificationEmail(
     `Demo Request: ${name} from ${school || 'Unknown School'}`,
