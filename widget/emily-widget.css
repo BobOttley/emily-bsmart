@@ -1,0 +1,499 @@
+/**
+ * Emily Widget Styles
+ *
+ * Theme variables are injected by the server based on school configuration.
+ * Use var(--emily-primary), var(--emily-secondary), etc.
+ */
+
+#emily-widget {
+  --emily-primary: #1A5F5A;
+  --emily-secondary: #C9A962;
+  --emily-accent: #1A5F5A;
+  --emily-white: #ffffff;
+  --emily-gray-50: #f9fafb;
+  --emily-gray-100: #f7fafc;
+  --emily-gray-200: #edf2f7;
+  --emily-gray-300: #e2e8f0;
+  --emily-gray-400: #cbd5e0;
+  --emily-gray-500: #a0aec0;
+  --emily-gray-600: #718096;
+  --emily-gray-700: #4a5568;
+  --emily-gray-800: #2d3748;
+  --emily-gray-900: #1a202c;
+  --emily-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --emily-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --emily-shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.15);
+  --emily-radius-sm: 6px;
+  --emily-radius: 12px;
+  --emily-radius-lg: 16px;
+  --emily-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 99999;
+  font-family: var(--emily-font);
+  font-size: 14px;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+#emily-widget *,
+#emily-widget *::before,
+#emily-widget *::after {
+  box-sizing: border-box;
+}
+
+/* Toggle Button */
+.emily-toggle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--emily-primary);
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--emily-shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.emily-toggle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0);
+  transition: background 0.2s ease;
+  border-radius: 50%;
+}
+
+.emily-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 14px 50px rgba(0, 0, 0, 0.2);
+}
+
+.emily-toggle:hover::before {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.emily-toggle:active {
+  transform: scale(0.98);
+}
+
+.emily-toggle__icon {
+  width: 28px;
+  height: 28px;
+  color: var(--emily-white);
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.emily-toggle__icon--close {
+  position: absolute;
+  opacity: 0;
+  transform: rotate(-90deg);
+}
+
+.emily-toggle--active .emily-toggle__icon--chat {
+  opacity: 0;
+  transform: rotate(90deg);
+}
+
+.emily-toggle--active .emily-toggle__icon--close {
+  opacity: 1;
+  transform: rotate(0);
+}
+
+/* Chat Window */
+.emily-chatbox {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  width: 380px;
+  max-height: 600px;
+  background: var(--emily-white);
+  border-radius: var(--emily-radius-lg);
+  box-shadow: var(--emily-shadow-lg);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.emily-chatbox--open {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Header */
+.emily-header {
+  background: var(--emily-primary);
+  color: var(--emily-white);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.emily-header__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.emily-header__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.emily-header__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.emily-header__name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.emily-header__status {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.emily-header__actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* Buttons */
+.emily-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--emily-radius-sm);
+  transition: background 0.2s ease, transform 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emily-btn:active {
+  transform: scale(0.95);
+}
+
+.emily-btn--icon {
+  color: var(--emily-white);
+}
+
+.emily-btn--icon:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.emily-btn--icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.emily-btn--active {
+  background: rgba(255, 255, 255, 0.25) !important;
+}
+
+.emily-btn--primary {
+  background: var(--emily-primary);
+  color: var(--emily-white);
+  padding: 12px;
+  border-radius: var(--emily-radius);
+}
+
+.emily-btn--primary:hover {
+  filter: brightness(1.1);
+}
+
+.emily-btn--primary svg {
+  width: 20px;
+  height: 20px;
+}
+
+.emily-btn--small {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--emily-white);
+  border: 1px solid var(--emily-gray-300);
+  border-radius: var(--emily-radius-sm);
+  color: var(--emily-gray-700);
+}
+
+.emily-btn--small:hover {
+  background: var(--emily-gray-100);
+  border-color: var(--emily-gray-400);
+}
+
+.emily-btn--secondary {
+  color: #e53e3e;
+  border-color: #fed7d7;
+  background: #fff5f5;
+}
+
+.emily-btn--secondary:hover {
+  background: #fed7d7;
+  border-color: #fc8181;
+}
+
+/* Messages */
+.emily-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 280px;
+  max-height: 380px;
+  background: var(--emily-gray-50);
+}
+
+.emily-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.emily-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.emily-messages::-webkit-scrollbar-thumb {
+  background: var(--emily-gray-300);
+  border-radius: 3px;
+}
+
+.emily-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--emily-gray-400);
+}
+
+.emily-message {
+  max-width: 85%;
+  animation: emily-message-in 0.3s ease;
+}
+
+@keyframes emily-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.emily-message--user {
+  align-self: flex-end;
+}
+
+.emily-message--assistant {
+  align-self: flex-start;
+}
+
+.emily-message__content {
+  padding: 12px 16px;
+  border-radius: var(--emily-radius);
+  line-height: 1.6;
+  font-size: 14px;
+  word-wrap: break-word;
+}
+
+.emily-message--user .emily-message__content {
+  background: var(--emily-primary);
+  color: var(--emily-white);
+  border-bottom-right-radius: 4px;
+}
+
+.emily-message--assistant .emily-message__content {
+  background: var(--emily-white);
+  color: var(--emily-gray-800);
+  border-bottom-left-radius: 4px;
+  box-shadow: var(--emily-shadow-sm);
+}
+
+/* Typing Indicator */
+.emily-typing .emily-message__content {
+  display: flex;
+  gap: 4px;
+  padding: 16px 20px;
+}
+
+.emily-typing__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--emily-gray-400);
+  border-radius: 50%;
+  animation: emily-typing 1.4s infinite ease-in-out both;
+}
+
+.emily-typing__dot:nth-child(1) { animation-delay: -0.32s; }
+.emily-typing__dot:nth-child(2) { animation-delay: -0.16s; }
+.emily-typing__dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes emily-typing {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Voice Status */
+.emily-voice-status {
+  background: var(--emily-white);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--emily-gray-200);
+}
+
+.emily-voice-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--emily-gray-400);
+  flex-shrink: 0;
+}
+
+.emily-voice-indicator--listening {
+  background: #48bb78;
+  animation: emily-pulse 1.5s infinite;
+}
+
+.emily-voice-indicator--speaking {
+  background: var(--emily-primary);
+  animation: emily-pulse 0.8s infinite;
+}
+
+.emily-voice-indicator--thinking {
+  background: var(--emily-secondary);
+  animation: emily-pulse 1s infinite;
+}
+
+@keyframes emily-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+}
+
+#emily-voice-text {
+  font-size: 13px;
+  color: var(--emily-gray-600);
+  flex: 1;
+}
+
+.emily-voice-controls {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Input */
+.emily-input-container {
+  display: flex;
+  padding: 12px 16px 16px;
+  gap: 8px;
+  background: var(--emily-white);
+  border-top: 1px solid var(--emily-gray-200);
+}
+
+.emily-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid var(--emily-gray-300);
+  border-radius: var(--emily-radius);
+  font-size: 14px;
+  font-family: var(--emily-font);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: var(--emily-gray-50);
+}
+
+.emily-input:focus {
+  border-color: var(--emily-primary);
+  box-shadow: 0 0 0 3px rgba(26, 95, 90, 0.1);
+  background: var(--emily-white);
+}
+
+.emily-input::placeholder {
+  color: var(--emily-gray-500);
+}
+
+/* Footer */
+.emily-footer {
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--emily-gray-500);
+  background: var(--emily-gray-100);
+  border-top: 1px solid var(--emily-gray-200);
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  #emily-widget {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .emily-chatbox {
+    width: calc(100vw - 20px);
+    right: 0;
+    bottom: 70px;
+    max-height: 70vh;
+    border-radius: var(--emily-radius);
+  }
+
+  .emily-toggle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .emily-messages {
+    padding: 16px;
+    min-height: 200px;
+    max-height: 50vh;
+  }
+
+  .emily-message {
+    max-width: 90%;
+  }
+}
+
+/* Print styles - hide widget */
+@media print {
+  #emily-widget {
+    display: none !important;
+  }
+}
