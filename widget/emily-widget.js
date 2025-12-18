@@ -174,9 +174,7 @@
 
         <!-- Privacy Footer -->
         <div id="emily-privacy-footer">
-          <a href="https://www.bsmart-ai.com/privacy" target="_blank">Privacy Policy</a>
-          <span>•</span>
-          <a href="https://www.bsmart-ai.com/terms" target="_blank">Terms</a>
+          <a href="https://s3.eu-west-2.amazonaws.com/bsmart-ai.com/privacy.html" target="_blank">Privacy Policy</a>
           <span>•</span>
           <span>Powered by bSMART AI</span>
         </div>
