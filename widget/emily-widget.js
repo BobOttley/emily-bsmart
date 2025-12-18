@@ -152,7 +152,7 @@
 
         <!-- Welcome -->
         <div id="emily-welcome">
-          Hello! I'm Emily from bSMART AI. How can I help you today?
+          Hello! I'm Emily from bSMART AI. I help schools transform their admissions with AI. Ask me about our 8 SMART products, or book a demo!
         </div>
 
         <!-- Chat History -->
@@ -424,11 +424,12 @@
   // =========================================================================
 
   function getQuickRepliesHtml() {
-    // Default quick replies for schools without custom config
+    // Default quick replies for bSMART sales
     const defaultReplies = [
-      { label: 'Fees', query: 'What are the fees?' },
-      { label: 'Apply', query: 'How do I apply?' },
-      { label: 'Visit', query: 'Can I book a visit?' }
+      { label: 'See Products', query: 'What are the 8 SMART products?' },
+      { label: 'Book a Demo', query: 'I\'d like to book a demo' },
+      { label: 'How It Works', query: 'How does bSMART connect everything together?' },
+      { label: 'Pricing', query: 'How does pricing work?' }
     ];
 
     const replies = schoolConfig?.quickReplies || defaultReplies;

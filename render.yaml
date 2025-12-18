@@ -11,3 +11,13 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
+      - key: MS_TENANT_ID
+        sync: false
+      - key: MS_CLIENT_ID
+        sync: false
+      - key: MS_CLIENT_SECRET
+        sync: false
+      - key: MS_SENDER_EMAIL
+        sync: false
+      - key: NOTIFICATION_EMAILS
+        sync: false

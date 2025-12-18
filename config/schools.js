@@ -10,7 +10,7 @@ const schools = {
     type: 'company',
     knowledgeBase: 'bsmart.md',
     theme: {
-      primary: '#FF9F1C',      // bSMART gold
+      primary: '#FF9F1C',      // bSMART gold/orange
       secondary: '#091825',    // bSMART navy
       accent: '#FF9F1C',
       background: '#FAFAFA',
@@ -26,14 +26,13 @@ const schools = {
       voice: 'coral',
       accent: 'British',
       tone: 'warm, professional, knowledgeable',
-      greeting: "Hello! I'm Emily from bSMART AI. How can I help you today?"
+      greeting: "Hello! I'm Emily from bSMART AI. I help schools transform their admissions with AI. How can I help you today?"
     },
     quickReplies: [
-      { label: 'Products', query: 'What products do you offer?' },
-      { label: 'How it Works', query: 'How does bSMART work?' },
-      { label: 'Book Demo', query: 'I\'d like to book a demo' },
-      { label: 'Pricing', query: 'How much does it cost?' },
-      { label: 'Contact', query: 'How can I contact you?' }
+      { label: 'See Products', query: 'What are the 8 SMART products?' },
+      { label: 'Book a Demo', query: 'I\'d like to book a demo' },
+      { label: 'How It Works', query: 'How does bSMART connect everything together?' },
+      { label: 'Pricing', query: 'How does pricing work?' }
     ]
   }
 };
