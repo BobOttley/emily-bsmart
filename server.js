@@ -361,7 +361,8 @@ app.get('/widget/:schoolId/emily.js', (req, res) => {
     shortName: school.shortName,
     theme: school.theme,
     contact: school.contact,
-    personality: school.emilyPersonality
+    personality: school.emilyPersonality,
+    quickReplies: school.quickReplies
   });
 
   widgetCode = widgetCode.replace('__SCHOOL_CONFIG__', schoolConfig);
