@@ -164,15 +164,10 @@ class EmilyVoiceHandler {
    */
   handleDataChannelOpen() {
     if (!this.hasGreeted) {
-      // Start narrating the prospectus immediately - no questions
       this.sendEvent({
         type: 'response.create',
         response: {
-          instructions: `You are narrating a personalised prospectus. Start immediately in British English.
-
-Say briefly: "Hello${this.familyContext.parent_name ? ` ${this.familyContext.parent_name}` : ''}, I'm Emily. Let me take you through ${this.familyContext.child_name ? this.familyContext.child_name + "'s" : 'your'} personalised prospectus."
-
-Then IMMEDIATELY call the get_prospectus_section function with section "welcome" to start the audio tour. Don't ask any questions - just begin the story.`
+          instructions: `Say: Hello! I'm Emily from bSMART AI. How can I help you today?`
         }
       });
       this.hasGreeted = true;

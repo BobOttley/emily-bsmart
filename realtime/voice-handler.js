@@ -168,7 +168,7 @@ class EmilyVoiceHandler {
       this.sendEvent({
         type: 'response.create',
         response: {
-          instructions: `Greet the user warmly. ${this.familyContext.parent_name ? `Address them as ${this.familyContext.parent_name}.` : ''} Let them know you can help with questions about the school and offer audio tours of the prospectus.`
+          instructions: `Say: Hello! I'm Emily from bSMART AI. How can I help you today?`
         }
       });
       this.hasGreeted = true;
