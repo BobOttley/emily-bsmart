@@ -84,17 +84,17 @@ router.post('/', async (req, res) => {
       functions: [
         {
           name: 'book_demo',
-          description: 'Book a demo with Bob Ottley. Use when someone wants a demo, meeting, or pricing info. Collect their name, email, and school first.',
+          description: 'IMMEDIATELY book a demo with Bob Ottley. Call this function AS SOON AS you have collected: name, email, school, role, and which products they want. Do NOT ask any more questions after collecting these - just call this function.',
           parameters: {
             type: 'object',
             properties: {
               name: { type: 'string', description: 'Contact name' },
               email: { type: 'string', description: 'Contact email' },
-              school: { type: 'string', description: 'School or organisation' },
-              role: { type: 'string', description: 'Their role' },
-              interests: { type: 'string', description: 'Which SMART products' }
+              school: { type: 'string', description: 'School or organisation name' },
+              role: { type: 'string', description: 'Their role at the school' },
+              interests: { type: 'string', description: 'Which SMART products they want to see' }
             },
-            required: ['name', 'email', 'school']
+            required: ['name', 'email', 'school', 'role', 'interests']
           }
         }
       ],

@@ -173,7 +173,7 @@ app.post('/api/:schoolId/realtime/session', async (req, res) => {
           {
             type: 'function',
             name: 'book_demo',
-            description: 'Book a demo with Bob Ottley. Use this when someone wants to see a demo, arrange a meeting, or learn more about pricing. Collect their name, email, school name, and role first.',
+            description: 'IMMEDIATELY book a demo with Bob Ottley. Call this function AS SOON AS you have: name, email, school, role, and which products they want. Do NOT ask more questions - just call this function.',
             parameters: {
               type: 'object',
               properties: {
@@ -191,14 +191,14 @@ app.post('/api/:schoolId/realtime/session', async (req, res) => {
                 },
                 role: {
                   type: 'string',
-                  description: 'Their role (e.g. Registrar, Head, Marketing)'
+                  description: 'Their role at the school'
                 },
                 interests: {
                   type: 'string',
-                  description: 'Which SMART products they are interested in'
+                  description: 'Which SMART products they want to see'
                 }
               },
-              required: ['name', 'email', 'school']
+              required: ['name', 'email', 'school', 'role', 'interests']
             }
           }
         ]

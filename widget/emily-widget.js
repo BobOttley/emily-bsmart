@@ -305,7 +305,7 @@
       hideThinking();
 
       if (data.response) {
-        addMessage('bot', data.response, true); // Enable contextual buttons
+        addMessage('bot', data.response, false); // Disabled contextual buttons - causing issues
         sessionId = data.session_id || sessionId;
       }
     } catch (err) {
