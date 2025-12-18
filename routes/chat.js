@@ -323,7 +323,7 @@ SALES APPROACH:
 GENERAL RULES:
 - Never make up information
 - Keep responses under 100 words
-- No markdown formatting (no asterisks, no bullet points)
+- NEVER USE ASTERISKS OR MARKDOWN - no **, no *, no bullet points, no formatting. Plain text only!
 - NEVER repeat yourself - check conversation history
 - Be enthusiastic but not pushy
 `;

@@ -527,6 +527,7 @@ GENERAL RULES:
 - Keep responses concise (this is voice!)
 - Be enthusiastic but not pushy
 - NEVER repeat yourself
+- NEVER USE ASTERISKS OR MARKDOWN - no **, no *, no bullet points, no formatting. Plain text only!
 
 KNOWLEDGE BASE:
 ${knowledgeBase || ''}
