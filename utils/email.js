@@ -147,9 +147,10 @@ function buildDemoRequestEmail(details, source = 'Website') {
   // Build conversation HTML if provided
   let conversationHtml = '';
   if (conversation && conversation.length > 0) {
+    const firstName = name ? name.split(' ')[0] : 'Visitor';
     const messages = conversation.map(msg => {
       const isUser = msg.role === 'user';
-      const label = isUser ? 'Visitor' : 'Emily';
+      const label = isUser ? firstName : 'Emily';
       const textColor = isUser ? '#034674' : '#091825';
       return `
         <div style="margin-bottom: 8px; padding: 8px 0; border-bottom: 1px solid #eee;">
@@ -293,9 +294,10 @@ function buildContactEmail(details) {
 
   let conversationHtml = '';
   if (conversation && conversation.length > 0) {
+    const firstName = name ? name.split(' ')[0] : 'Visitor';
     const messages = conversation.map(msg => {
       const isUser = msg.role === 'user';
-      const label = isUser ? 'Visitor' : 'Emily';
+      const label = isUser ? firstName : 'Emily';
       const textColor = isUser ? '#034674' : '#091825';
       return `
         <div style="margin-bottom: 8px; padding: 8px 0; border-bottom: 1px solid #eee;">
