@@ -12,7 +12,7 @@ const path = require('path');
 const OpenAI = require('openai');
 
 // Import shared email utility
-const { sendNotificationEmail, buildDemoRequestEmail } = require('../utils/email');
+const { sendNotificationEmail, buildDemoRequestEmail, buildContactEmail } = require('../utils/email');
 
 // Initialize OpenAI client (deferred to allow server to start without API key)
 let openai = null;
@@ -96,6 +96,20 @@ router.post('/', async (req, res) => {
             },
             required: ['name', 'email', 'school', 'role', 'interests']
           }
+        },
+        {
+          name: 'contact_us',
+          description: 'Send a contact enquiry when someone has a question and wants to be contacted. Collect their name, email, school, and their question.',
+          parameters: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', description: 'Contact name' },
+              email: { type: 'string', description: 'Contact email' },
+              school: { type: 'string', description: 'School or organisation name' },
+              question: { type: 'string', description: 'Their question or what they want to discuss' }
+            },
+            required: ['name', 'email', 'question']
+          }
         }
       ],
       function_call: 'auto'
@@ -143,6 +157,48 @@ router.post('/', async (req, res) => {
             role: 'function',
             name: 'book_demo',
             content: JSON.stringify(demoResult)
+          }
+        ];
+
+        const followUp = await getOpenAIClient().chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: functionMessages,
+          temperature: 0.7,
+          max_tokens: 1000
+        });
+
+        response = followUp.choices[0].message.content;
+      } else if (functionName === 'contact_us') {
+        // Log the contact request
+        console.log(`Contact enquiry from chat: ${functionArgs.name} (${functionArgs.email})`);
+
+        // Send contact enquiry email
+        const emailBody = buildContactEmail({
+          name: functionArgs.name,
+          email: functionArgs.email,
+          school: functionArgs.school,
+          question: functionArgs.question,
+          conversation: conversation.messages
+        });
+
+        const emailResult = await sendNotificationEmail(
+          `Enquiry: ${functionArgs.name} from ${functionArgs.school || 'Unknown'}`,
+          emailBody
+        );
+
+        const contactResult = {
+          ok: true,
+          email_sent: emailResult.success,
+          message: `Thanks ${functionArgs.name}! I've sent your enquiry to the team. Someone will be in touch shortly.`
+        };
+
+        const functionMessages = [
+          ...apiMessages,
+          assistantMessage,
+          {
+            role: 'function',
+            name: 'contact_us',
+            content: JSON.stringify(contactResult)
           }
         ];
 

@@ -524,10 +524,10 @@
   function getQuickRepliesHtml() {
     // Default quick replies for bSMART sales
     const defaultReplies = [
-      { label: 'See Products', query: 'What are the 8 SMART products?' },
-      { label: 'Book a Demo', query: 'I\'d like to book a demo' },
-      { label: 'How It Works', query: 'How does bSMART connect everything together?' },
-      { label: 'Pricing', query: 'How does pricing work?' }
+      { label: 'See All Products', query: 'What are the 8 SMART products?' },
+      { label: 'Book a Demo', query: 'I\'d like to book a demo with Bob' },
+      { label: 'Contact Us', query: 'I have a question and would like someone to contact me' },
+      { label: 'How It Works', query: 'How does bSMART connect everything together?' }
     ];
 
     const replies = schoolConfig?.quickReplies || defaultReplies;
@@ -825,18 +825,18 @@
       }
       .emily-quick {
         padding: 6px 12px;
-        background: var(--emily-btn-bg);
-        color: var(--emily-btn-fg);
+        background: #fff;
+        color: var(--emily-primary);
         font-size: 12px;
         border-radius: 20px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--emily-primary);
         cursor: pointer;
         transition: all 0.2s ease;
       }
       .emily-quick:hover {
-        background: var(--emily-accent);
+        background: var(--emily-primary);
         color: #fff;
-        border-color: var(--emily-accent);
+        border-color: var(--emily-primary);
       }
       .emily-quick--highlight {
         background: var(--emily-primary);

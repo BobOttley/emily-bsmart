@@ -32,8 +32,8 @@ const schools = {
     quickReplies: [
       { label: 'See All Products', query: 'What are the 8 SMART products?' },
       { label: 'Book a Demo', query: 'I\'d like to book a demo with Bob' },
-      { label: 'How It Connects', query: 'How does bSMART connect everything together?' },
-      { label: 'Security & Data', query: 'Tell me about security and data protection' }
+      { label: 'Contact Us', query: 'I have a question and would like someone to contact me' },
+      { label: 'How It Works', query: 'How does bSMART connect everything together?' }
     ],
     // Contextual follow-up buttons based on topics
     contextualReplies: {

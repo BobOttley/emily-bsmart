@@ -285,9 +285,143 @@ function buildDemoRequestEmail(details, source = 'Website') {
   `;
 }
 
+/**
+ * Generate email for contact enquiries
+ */
+function buildContactEmail(details) {
+  const { name, email, school, question, conversation } = details;
+
+  let conversationHtml = '';
+  if (conversation && conversation.length > 0) {
+    const messages = conversation.map(msg => {
+      const isUser = msg.role === 'user';
+      const label = isUser ? 'Visitor' : 'Emily';
+      const textColor = isUser ? '#034674' : '#091825';
+      return `
+        <div style="margin-bottom: 8px; padding: 8px 0; border-bottom: 1px solid #eee;">
+          <span style="font-size: 11px; color: #999; text-transform: uppercase;">${label}</span><br>
+          <span style="font-size: 13px; color: ${textColor}; line-height: 1.4;">${msg.content}</span>
+        </div>
+      `;
+    }).join('');
+
+    conversationHtml = `
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 25px;">
+        <tr>
+          <td>
+            <p style="margin: 0 0 10px; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Conversation</p>
+            <div style="padding: 15px; background-color: #f9f9f9; border-radius: 4px;">
+              ${messages}
+            </div>
+          </td>
+        </tr>
+      </table>
+    `;
+  }
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 30px 0;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background-color: #ffffff;">
+
+          <tr>
+            <td style="background-color: #091825; padding: 25px 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <span style="color: #FF9F1C; font-size: 22px; font-weight: bold;">bSMART</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <span style="color: #888; font-size: 12px;">Contact Enquiry</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 30px;">
+              <p style="margin: 0 0 20px; color: #333; font-size: 14px;">
+                New enquiry received:
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e0e0e0;">
+                <tr>
+                  <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0; width: 100px; background-color: #fafafa;">
+                    <span style="color: #666; font-size: 12px;">Name</span>
+                  </td>
+                  <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0;">
+                    <strong style="color: #091825;">${name || '-'}</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fafafa;">
+                    <span style="color: #666; font-size: 12px;">Email</span>
+                  </td>
+                  <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0;">
+                    <a href="mailto:${email}" style="color: #034674; text-decoration: none;">${email || '-'}</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0; background-color: #fafafa;">
+                    <span style="color: #666; font-size: 12px;">School</span>
+                  </td>
+                  <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0;">
+                    <span style="color: #091825;">${school || '-'}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 15px; background-color: #fafafa; vertical-align: top;">
+                    <span style="color: #666; font-size: 12px;">Question</span>
+                  </td>
+                  <td style="padding: 12px 15px;">
+                    <span style="color: #091825;">${question || '-'}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 25px;">
+                <tr>
+                  <td>
+                    <a href="mailto:${email}?subject=Re:%20Your%20bSMART%20Enquiry&body=Hi%20${encodeURIComponent(name || '')},%0A%0AThank%20you%20for%20getting%20in%20touch.%0A%0A"
+                       style="display: inline-block; background-color: #FF9F1C; color: #091825; padding: 10px 25px; font-size: 14px; font-weight: bold; text-decoration: none;">
+                      Reply to ${name?.split(' ')[0] || 'Enquiry'}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              ${conversationHtml}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color: #091825; padding: 15px 30px;">
+              <span style="color: #666; font-size: 11px;">Captured by Emily | <a href="https://www.bsmart-ai.com" style="color: #FF9F1C; text-decoration: none;">bsmart-ai.com</a></span>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
 module.exports = {
   sendNotificationEmail,
   isEmailConfigured,
   logEmailStatus,
-  buildDemoRequestEmail
+  buildDemoRequestEmail,
+  buildContactEmail
 };
