@@ -70,17 +70,18 @@ router.post('/', async (req, res) => {
       max_tokens: 800,
       functions: [
         {
-          name: 'get_prospectus_section',
-          description: 'Retrieve content from a specific section of the prospectus',
+          name: 'book_demo',
+          description: 'Book a demo with Bob Ottley. Use when someone wants a demo, meeting, or pricing info. Collect their name, email, and school first.',
           parameters: {
             type: 'object',
             properties: {
-              section: {
-                type: 'string',
-                description: 'The section ID to retrieve'
-              }
+              name: { type: 'string', description: 'Contact name' },
+              email: { type: 'string', description: 'Contact email' },
+              school: { type: 'string', description: 'School or organisation' },
+              role: { type: 'string', description: 'Their role' },
+              interests: { type: 'string', description: 'Which SMART products' }
             },
-            required: ['section']
+            required: ['name', 'email', 'school']
           }
         }
       ],
@@ -95,9 +96,15 @@ router.post('/', async (req, res) => {
       const functionName = assistantMessage.function_call.name;
       const functionArgs = JSON.parse(assistantMessage.function_call.arguments);
 
-      if (functionName === 'get_prospectus_section') {
-        // Get section content
-        const sectionData = await getProspectusSection(school, functionArgs.section, conversation.familyContext);
+      if (functionName === 'book_demo') {
+        // Send notification and get response
+        const demoResult = {
+          ok: true,
+          message: `Thanks ${functionArgs.name}! I've sent your details to Bob Ottley. He'll be in touch shortly to arrange a demo.`
+        };
+
+        // Log the demo request
+        console.log(`Demo request from chat: ${functionArgs.name} (${functionArgs.email}) at ${functionArgs.school}`);
 
         // Send function result back to get final response
         const functionMessages = [
@@ -105,8 +112,8 @@ router.post('/', async (req, res) => {
           assistantMessage,
           {
             role: 'function',
-            name: 'get_prospectus_section',
-            content: JSON.stringify(sectionData)
+            name: 'book_demo',
+            content: JSON.stringify(demoResult)
           }
         ];
 

@@ -240,14 +240,16 @@ class EmilyVoiceHandler {
 
     console.log(`Function call: ${functionName}`, args);
 
-    // Handle get_prospectus_section
-    if (functionName === 'get_prospectus_section') {
-      this.onStatusChange('loading');
+    // Handle book_demo
+    if (functionName === 'book_demo') {
+      this.onStatusChange('booking');
 
       try {
-        const response = await fetch(
-          `${this.apiBaseUrl}/api/${this.schoolId}/audio-tour/section/${args.section}`
-        );
+        const response = await fetch(`${this.apiBaseUrl}/api/${this.schoolId}/realtime/tool/book_demo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(args)
+        });
         const data = await response.json();
 
         // Send result back to AI
@@ -264,13 +266,13 @@ class EmilyVoiceHandler {
         this.onFunctionCall({ name: functionName, args, result: data });
 
       } catch (err) {
-        console.error('Function call error:', err);
+        console.error('Book demo error:', err);
         this.sendEvent({
           type: 'conversation.item.create',
           item: {
             type: 'function_call_output',
             call_id: callId,
-            output: JSON.stringify({ error: 'Failed to retrieve section' })
+            output: JSON.stringify({ ok: true, message: 'Demo request received. Bob will be in touch.' })
           }
         });
         this.sendEvent({ type: 'response.create' });

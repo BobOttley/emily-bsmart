@@ -11,6 +11,49 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const nodemailer = require('nodemailer');
+
+// Email configuration
+const GMAIL_USER = process.env.GMAIL_USER || 'bob.ottley@bsmart-ai.com';
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || 'bob.ottley@bsmart-ai.com';
+
+// Email transporter
+let emailTransporter = null;
+if (GMAIL_APP_PASSWORD) {
+  emailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_APP_PASSWORD
+    }
+  });
+  console.log('Email notifications enabled');
+} else {
+  console.log('Email notifications disabled - no GMAIL_APP_PASSWORD set');
+}
+
+// Send notification email to Bob
+async function sendNotificationEmail(subject, body) {
+  if (!emailTransporter) {
+    console.log('Email not configured - would send:', subject);
+    return { success: false, error: 'Email not configured' };
+  }
+
+  try {
+    await emailTransporter.sendMail({
+      from: GMAIL_USER,
+      to: NOTIFICATION_EMAIL,
+      subject: `[bSMART Emily] ${subject}`,
+      html: body
+    });
+    console.log('Notification email sent:', subject);
+    return { success: true };
+  } catch (err) {
+    console.error('Email error:', err);
+    return { success: false, error: err.message };
+  }
+}
 
 // Import routes
 const chatRoutes = require('./routes/chat');
@@ -164,6 +207,37 @@ app.post('/api/:schoolId/realtime/session', async (req, res) => {
               },
               required: ['query']
             }
+          },
+          {
+            type: 'function',
+            name: 'book_demo',
+            description: 'Book a demo with Bob Ottley. Use this when someone wants to see a demo, arrange a meeting, or learn more about pricing. Collect their name, email, school name, and role first.',
+            parameters: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'Contact name'
+                },
+                email: {
+                  type: 'string',
+                  description: 'Contact email address'
+                },
+                school: {
+                  type: 'string',
+                  description: 'School or organisation name'
+                },
+                role: {
+                  type: 'string',
+                  description: 'Their role (e.g. Registrar, Head, Marketing)'
+                },
+                interests: {
+                  type: 'string',
+                  description: 'Which SMART products they are interested in'
+                }
+              },
+              required: ['name', 'email', 'school']
+            }
           }
         ]
       })
@@ -312,6 +386,40 @@ app.post('/api/:schoolId/realtime/tool/kb_search', async (req, res) => {
     console.error('KB search error:', err);
     res.status(500).json({ ok: false, error: 'Search failed' });
   }
+});
+
+// Book demo tool endpoint - sends email notification to Bob
+app.post('/api/:schoolId/realtime/tool/book_demo', async (req, res) => {
+  const { name, email, school, role, interests } = req.body;
+
+  if (!name || !email) {
+    return res.status(400).json({ ok: false, error: 'Name and email required' });
+  }
+
+  console.log(`Demo request from ${name} (${email}) at ${school}`);
+
+  // Send notification email to Bob
+  const emailBody = `
+    <h2>New Demo Request from bSMART Website</h2>
+    <p><strong>Name:</strong> ${name}</p>
+    <p><strong>Email:</strong> ${email}</p>
+    <p><strong>School:</strong> ${school || 'Not provided'}</p>
+    <p><strong>Role:</strong> ${role || 'Not provided'}</p>
+    <p><strong>Interested in:</strong> ${interests || 'Not specified'}</p>
+    <hr>
+    <p><em>This lead was captured by Emily on the bSMART website.</em></p>
+  `;
+
+  const emailResult = await sendNotificationEmail(
+    `Demo Request: ${name} from ${school || 'Unknown School'}`,
+    emailBody
+  );
+
+  res.json({
+    ok: true,
+    message: `Thanks ${name}! I've sent your details to Bob Ottley. He'll be in touch shortly to arrange a demo.`,
+    email_sent: emailResult.success
+  });
 });
 
 // ============================================================================
