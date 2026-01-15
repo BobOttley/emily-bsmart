@@ -563,7 +563,6 @@ app.get('/track/p/:campaign_id/:recipient_id', async (req, res) => {
   console.log(`[TRACKING] Prospectus click: campaign=${campaign_id}, recipient=${recipient_id}`);
 
   try {
-    // Get prospectus URL for this campaign
     const campaignResult = await campaignPool.query(
       'SELECT prospectus_url FROM campaigns WHERE id = $1',
       [campaign_id]
@@ -576,16 +575,49 @@ app.get('/track/p/:campaign_id/:recipient_id', async (req, res) => {
 
     const prospectusUrl = campaignResult.rows[0].prospectus_url;
 
-    // Log the engagement event
     const userAgent = (req.headers['user-agent'] || '').substring(0, 500);
     await campaignPool.query(
-      `INSERT INTO prospectus_events (campaign_id, recipient_id, user_agent, ip_hash)
-       VALUES ($1, $2, $3, $4)`,
+      `INSERT INTO prospectus_events (campaign_id, recipient_id, user_agent, ip_hash, event_type)
+       VALUES ($1, $2, $3, $4, 'prospectus')`,
       [campaign_id, recipient_id, userAgent, '']
     );
 
-    console.log(`[TRACKING] Logged view, redirecting to: ${prospectusUrl}`);
+    console.log(`[TRACKING] Logged prospectus view, redirecting to: ${prospectusUrl}`);
     res.redirect(302, prospectusUrl);
+
+  } catch (err) {
+    console.error('[TRACKING] Error:', err.message);
+    res.status(500).send('Error processing request');
+  }
+});
+
+// Track enquiry form click and redirect
+app.get('/track/e/:campaign_id/:recipient_id', async (req, res) => {
+  const { campaign_id, recipient_id } = req.params;
+  console.log(`[TRACKING] Enquiry click: campaign=${campaign_id}, recipient=${recipient_id}`);
+
+  try {
+    const campaignResult = await campaignPool.query(
+      'SELECT enquiry_url FROM campaigns WHERE id = $1',
+      [campaign_id]
+    );
+
+    if (campaignResult.rows.length === 0) {
+      console.log(`[TRACKING] Campaign not found: ${campaign_id}`);
+      return res.status(404).send('Campaign not found');
+    }
+
+    const enquiryUrl = campaignResult.rows[0].enquiry_url;
+
+    const userAgent = (req.headers['user-agent'] || '').substring(0, 500);
+    await campaignPool.query(
+      `INSERT INTO prospectus_events (campaign_id, recipient_id, user_agent, ip_hash, event_type)
+       VALUES ($1, $2, $3, $4, 'enquiry')`,
+      [campaign_id, recipient_id, userAgent, '']
+    );
+
+    console.log(`[TRACKING] Logged enquiry view, redirecting to: ${enquiryUrl}`);
+    res.redirect(302, enquiryUrl);
 
   } catch (err) {
     console.error('[TRACKING] Error:', err.message);
