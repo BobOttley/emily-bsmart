@@ -10,6 +10,18 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const { Pool } = require('pg');
+
+// SMART Campaign database connection (shared with More House)
+const campaignPool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Test campaign database connection
+campaignPool.query('SELECT NOW()')
+  .then(() => console.log('SMART Campaign database connected'))
+  .catch(err => console.error('Campaign DB connection error:', err.message));
 
 // Import shared email utility
 const { sendNotificationEmail, logEmailStatus, buildDemoRequestEmail } = require('./utils/email');
@@ -21,6 +33,7 @@ logEmailStatus();
 const chatRoutes = require('./routes/chat');
 const audioTourRoutes = require('./routes/audio-tour');
 const healthRoutes = require('./routes/health');
+const demoRoutes = require('./routes/demo');
 
 // Import config
 const { schools, getSchool, getSchoolIds, detectSchoolFromUrl } = require('./config/schools');
@@ -40,6 +53,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files for widget
 app.use('/widget', express.static(path.join(__dirname, 'widget')));
+
+// Serve static files for demo
+app.use('/static', express.static(path.join(__dirname, 'static')));
 
 // Serve the main prospectus static files from parent directory (all school folders)
 app.use(express.static(path.join(__dirname, '..')));
@@ -78,6 +94,9 @@ app.use((req, res, next) => {
 
 // Health check
 app.use('/api/health', healthRoutes);
+
+// Demo routes (no school ID required)
+app.use('/api/demo', demoRoutes);
 
 // School-specific API routes
 app.use('/api/:schoolId/chat', (req, res, next) => {
@@ -535,6 +554,84 @@ ${knowledgeBase || ''}
 }
 
 // ============================================================================
+// SMART CAMPAIGN TRACKING ROUTES
+// ============================================================================
+
+// Track prospectus click and redirect
+app.get('/track/p/:campaign_id/:recipient_id', async (req, res) => {
+  const { campaign_id, recipient_id } = req.params;
+  console.log(`[TRACKING] Prospectus click: campaign=${campaign_id}, recipient=${recipient_id}`);
+
+  try {
+    // Get prospectus URL for this campaign
+    const campaignResult = await campaignPool.query(
+      'SELECT prospectus_url FROM campaigns WHERE id = $1',
+      [campaign_id]
+    );
+
+    if (campaignResult.rows.length === 0) {
+      console.log(`[TRACKING] Campaign not found: ${campaign_id}`);
+      return res.status(404).send('Campaign not found');
+    }
+
+    const prospectusUrl = campaignResult.rows[0].prospectus_url;
+
+    // Log the engagement event
+    const userAgent = (req.headers['user-agent'] || '').substring(0, 500);
+    await campaignPool.query(
+      `INSERT INTO prospectus_events (campaign_id, recipient_id, user_agent, ip_hash)
+       VALUES ($1, $2, $3, $4)`,
+      [campaign_id, recipient_id, userAgent, '']
+    );
+
+    console.log(`[TRACKING] Logged view, redirecting to: ${prospectusUrl}`);
+    res.redirect(302, prospectusUrl);
+
+  } catch (err) {
+    console.error('[TRACKING] Error:', err.message);
+    res.status(500).send('Error processing request');
+  }
+});
+
+// One-click unsubscribe
+app.get('/unsubscribe/:recipient_id', async (req, res) => {
+  const { recipient_id } = req.params;
+  console.log(`[UNSUBSCRIBE] Request for recipient: ${recipient_id}`);
+
+  try {
+    const result = await campaignPool.query(
+      'UPDATE recipients SET opted_out = TRUE WHERE id = $1 RETURNING email',
+      [recipient_id]
+    );
+
+    if (result.rows.length > 0) {
+      console.log(`[UNSUBSCRIBE] Opted out: ${result.rows[0].email}`);
+    }
+
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsubscribed</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f8fafc; color: #334155;">
+    <div style="text-align: center; padding: 40px; max-width: 500px;">
+        <div style="font-size: 48px; margin-bottom: 20px;">&#10003;</div>
+        <h1 style="font-size: 24px; margin-bottom: 15px; color: #22c55e;">Unsubscribed</h1>
+        <p style="font-size: 16px; line-height: 1.6;">You will no longer receive emails from me.</p>
+        <p style="margin-top: 20px; font-size: 14px; color: #64748b;">You can close this window.</p>
+    </div>
+</body>
+</html>`);
+
+  } catch (err) {
+    console.error('[UNSUBSCRIBE] Error:', err.message);
+    res.status(500).send('Error processing request');
+  }
+});
+
+// ============================================================================
 // START SERVER
 // ============================================================================
 
@@ -546,11 +643,11 @@ app.listen(PORT, () => {
 ║   ─────────────────────────────────────────────────────    ║
 ║   Server running on port ${PORT}                             ║
 ║                                                            ║
-║   Available schools:                                       ║
-${getSchoolIds().map(id => `║   • ${getSchool(id).name.padEnd(45)}║`).join('\n')}
+║   Demo:   http://localhost:${PORT}/static/demo.html          ║
+║   API:    /api/demo/start, /api/demo/chat                  ║
 ║                                                            ║
 ║   Widget: /widget/{schoolId}/emily.js                      ║
-║   API:    /api/{schoolId}/chat                             ║
+║   Chat:   /api/{schoolId}/chat                             ║
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
   `);
