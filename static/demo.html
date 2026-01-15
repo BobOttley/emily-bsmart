@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bSMART AI - Live Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-orange: #FF9F1C;
+            --dark-navy: #091825;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--dark-navy) 0%, #1a2d3d 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .demo-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Left side - CRM View */
+        .crm-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f5;
+            position: relative;
+        }
+
+        .crm-panel.hidden {
+            display: none;
+        }
+
+        .crm-header {
+            background: var(--dark-navy);
+            color: white;
+            padding: 12px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .crm-header .badge {
+            background: var(--primary-orange);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .crm-iframe {
+            flex: 1;
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Right side - Landing + EMILY */
+        .emily-panel {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            transition: width 0.3s ease;
+        }
+
+        .emily-panel.split {
+            width: 450px;
+            min-width: 450px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo span {
+            color: var(--primary-orange);
+        }
+
+        .tagline {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        .demo-hint {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            color: white;
+            text-align: center;
+            max-width: 400px;
+            margin-top: 1rem;
+        }
+
+        .demo-hint p {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 1rem;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+        }
+
+        .footer a {
+            color: var(--primary-orange);
+            text-decoration: none;
+        }
+
+        /* CRM reveal animation */
+        .crm-panel {
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* EMILY CHAT WIDGET STYLES */
+        #emily-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            min-width: 140px;
+            height: 56px;
+            border-radius: 28px;
+            background: var(--primary-orange);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,.2);
+            z-index: 100000;
+            padding: 0 20px;
+            border: none;
+            transition: all .2s ease;
+        }
+
+        #emily-toggle:hover {
+            background: #e98f14;
+            transform: translateY(-2px);
+        }
+
+        #emily-chatbox {
+            display: none;
+            flex-direction: column;
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 400px;
+            height: 580px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.15);
+            z-index: 100000;
+            overflow: hidden;
+        }
+
+        #emily-chatbox.open {
+            display: flex;
+            animation: slideUp .25s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(16px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        #emily-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 15px;
+            background: var(--dark-navy);
+            color: #fff;
+        }
+
+        #emily-header h2 {
+            margin: 0;
+            font-size: 16px;
+            flex: 1;
+        }
+
+        #emily-header .demo-badge {
+            background: var(--primary-orange);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        #emily-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        #emily-close:hover {
+            background: rgba(255,255,255,.12);
+        }
+
+        #chat-history {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            font-size: 14px;
+            line-height: 1.5;
+            max-width: 85%;
+            border-radius: 12px;
+        }
+
+        .message.user {
+            text-align: right;
+            margin-left: auto;
+            background: #e3f2fd;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot {
+            text-align: left;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.bot .sender {
+            font-weight: 600;
+            color: var(--primary-orange);
+            margin-bottom: 4px;
+        }
+
+        #suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 15px;
+            background: #fff;
+            border-top: 1px solid #eee;
+        }
+
+        #suggestions:empty {
+            display: none;
+        }
+
+        .suggestion-btn {
+            padding: 8px 14px;
+            border: 1px solid var(--primary-orange);
+            border-radius: 20px;
+            background: #fff;
+            color: var(--dark-navy);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .suggestion-btn:hover {
+            background: var(--primary-orange);
+            color: #fff;
+        }
+
+        #emily-input-container {
+            display: flex;
+            padding: 12px;
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        #message-input:focus {
+            border-color: var(--primary-orange);
+        }
+
+        #send-button {
+            margin-left: 8px;
+            padding: 10px 18px;
+            background: var(--dark-navy);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        #send-button:hover {
+            background: #0c2235;
+        }
+
+        #thinking-indicator {
+            padding: 10px 15px;
+            display: none;
+            font-style: italic;
+            color: #777;
+            font-size: 13px;
+        }
+
+        #thinking-indicator.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <!-- CRM Panel - Initially Hidden, shows after enquiry created -->
+        <div id="crm-panel" class="crm-panel hidden">
+            <div class="crm-header">
+                <span>SMART CRM - Admissions Dashboard</span>
+                <span class="badge">LIVE</span>
+            </div>
+            <iframe id="crm-iframe" class="crm-iframe" src="about:blank"></iframe>
+        </div>
+
+        <!-- EMILY Panel -->
+        <div id="emily-panel" class="emily-panel">
+            <div class="header">
+                <div class="logo">b<span>SMART</span> AI</div>
+                <p class="tagline">AI-Powered School Admissions</p>
+            </div>
+
+            <div class="demo-hint">
+                <p><strong>EMILY is ready to show you the magic!</strong></p>
+                <p>Click <strong>ASK Emily</strong> to start your live demo.</p>
+            </div>
+
+            <div class="footer">
+                <p>Questions? <a href="mailto:bob.ottley@bsmart-ai.com">bob.ottley@bsmart-ai.com</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- EMILY Chat Widget -->
+    <button id="emily-toggle">💬 ASK Emily</button>
+
+    <div id="emily-chatbox">
+        <div id="emily-header">
+            <h2>Chat with Emily</h2>
+            <span class="demo-badge">DEMO</span>
+            <button id="emily-close">×</button>
+        </div>
+        <div id="chat-history"></div>
+        <div id="suggestions"></div>
+        <div id="thinking-indicator">Emily is thinking...</div>
+        <div id="emily-input-container">
+            <input type="text" id="message-input" placeholder="Type your message...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const API_BASE = window.location.origin;
+        const CRM_URL = 'http://localhost:3001';
+        let demoSessionId = null;
+        let currentState = 'welcome';
+
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const toggle = document.getElementById('emily-toggle');
+        const chatbox = document.getElementById('emily-chatbox');
+        const closeBtn = document.getElementById('emily-close');
+        const chatHistory = document.getElementById('chat-history');
+        const suggestionsEl = document.getElementById('suggestions');
+        const input = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-button');
+        const thinking = document.getElementById('thinking-indicator');
+        const crmPanel = document.getElementById('crm-panel');
+        const emilyPanel = document.getElementById('emily-panel');
+        const crmIframe = document.getElementById('crm-iframe');
+
+        // ============================================
+        // INITIALISATION
+        // ============================================
+        async function startDemo() {
+            try {
+                const res = await fetch(`${API_BASE}/api/demo/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    demoSessionId = data.session_id;
+                    currentState = data.state;
+                    console.log('Demo session started:', demoSessionId);
+
+                    // Get initial greeting from Emily
+                    await sendMessage('');
+                }
+            } catch (err) {
+                console.error('Failed to start demo:', err);
+                addMessage('bot', "Welcome! I'm Emily, here to show you bSMART AI. Tell me your name and email to get started!");
+            }
+        }
+
+        // ============================================
+        // CHAT FUNCTIONS
+        // ============================================
+        function addMessage(type, content) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${type}`;
+
+            if (type === 'bot') {
+                msgDiv.innerHTML = `<div class="sender">Emily</div><div>${content}</div>`;
+            } else {
+                msgDiv.textContent = content;
+            }
+
+            chatHistory.appendChild(msgDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function showSuggestions(suggestions, queryMap) {
+            suggestionsEl.innerHTML = '';
+
+            if (!suggestions || suggestions.length === 0) return;
+
+            suggestions.forEach(label => {
+                const btn = document.createElement('button');
+                btn.className = 'suggestion-btn';
+                btn.textContent = label;
+                btn.onclick = () => {
+                    const query = queryMap[label] || label;
+                    input.value = query;
+                    sendMessage(query);
+                };
+                suggestionsEl.appendChild(btn);
+            });
+        }
+
+        async function sendMessage(text) {
+            if (text) {
+                addMessage('user', text);
+            }
+
+            input.value = '';
+            thinking.classList.add('visible');
+            suggestionsEl.innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/demo/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: demoSessionId,
+                        message: text
+                    })
+                });
+
+                const data = await res.json();
+                console.log('Demo response:', data);
+
+                if (data.success) {
+                    currentState = data.state;
+
+                    // Add Emily's response
+                    addMessage('bot', data.response);
+
+                    // Make Emily SPEAK the response
+                    speakResponse(data.response);
+
+                    // Show suggestion buttons
+                    showSuggestions(data.suggestions, data.query_map);
+
+                    // Reveal CRM when enquiry is created
+                    if (data.action_result?.action === 'reveal_crm') {
+                        revealCRM();
+                    }
+                } else {
+                    addMessage('bot', "Sorry, something went wrong. Let's try again!");
+                }
+
+            } catch (err) {
+                console.error('Chat error:', err);
+                addMessage('bot', "I had trouble responding. Please try again!");
+            }
+
+            thinking.classList.remove('visible');
+        }
+
+        // ============================================
+        // EMILY VOICE (Text-to-Speech)
+        // ============================================
+        let speechSynth = window.speechSynthesis;
+        let emilyVoice = null;
+
+        function loadVoices() {
+            const voices = speechSynth.getVoices();
+            // Prefer British female voices
+            emilyVoice = voices.find(v => v.lang.includes('en-GB') && v.name.toLowerCase().includes('female')) ||
+                         voices.find(v => v.lang.includes('en-GB')) ||
+                         voices.find(v => v.lang.includes('en')) ||
+                         voices[0];
+            console.log('Emily voice:', emilyVoice?.name);
+        }
+
+        speechSynth.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        function speakResponse(text) {
+            if (!speechSynth) return;
+
+            // Cancel any ongoing speech
+            speechSynth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = emilyVoice;
+            utterance.rate = 1.0;
+            utterance.pitch = 1.1;
+            utterance.volume = 1.0;
+
+            speechSynth.speak(utterance);
+        }
+
+        // ============================================
+        // CRM REVEAL (Simple - just show the iframe)
+        // ============================================
+        function revealCRM() {
+            console.log('Revealing CRM dashboard');
+
+            // Show CRM panel
+            crmPanel.classList.remove('hidden');
+            emilyPanel.classList.add('split');
+
+            // Load CRM with demo login
+            const crmUrl = `${CRM_URL}/api/auth/demo-login?demo_session=${demoSessionId}`;
+            crmIframe.src = crmUrl;
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        toggle.addEventListener('click', () => {
+            chatbox.classList.toggle('open');
+            if (chatbox.classList.contains('open')) {
+                input.focus();
+                if (!demoSessionId) {
+                    startDemo();
+                }
+            }
+        });
+
+        closeBtn.addEventListener('click', () => {
+            chatbox.classList.remove('open');
+        });
+
+        sendBtn.addEventListener('click', () => {
+            const text = input.value.trim();
+            if (text) {
+                sendMessage(text);
+            }
+        });
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const text = input.value.trim();
+                if (text) {
+                    sendMessage(text);
+                }
+            }
+        });
+
+        // Auto-open chat after a short delay
+        setTimeout(() => {
+            chatbox.classList.add('open');
+            if (!demoSessionId) {
+                startDemo();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
