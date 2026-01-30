@@ -99,7 +99,7 @@ router.post('/', async (req, res) => {
       functions: [
         {
           name: 'book_demo',
-          description: 'IMMEDIATELY book a demo with Bob Ottley. Call this function AS SOON AS you have collected: name, email, school, role, and which products they want. Do NOT ask any more questions after collecting these - just call this function.',
+          description: 'ONLY use this when someone explicitly says they do NOT want to book a specific time and just want Bob to contact them later. This sends an email to Bob but does NOT book a meeting. For actual demo bookings with a calendar invite, you MUST use schedule_meeting instead after asking: 1) Teams or in-person, 2) What week, 3) What time.',
           parameters: {
             type: 'object',
             properties: {
@@ -727,14 +727,21 @@ CONTACT:
 KNOWLEDGE BASE:
 ${knowledgeBase || ''}
 
-DEMO BOOKING / CONTACT RULES (CRITICAL):
-- BE EFFICIENT. Ask for MULTIPLE pieces of information at once, not one at a time.
-- Example: "Lovely! Could you share your name, email, school and role?"
-- If they've ALREADY MENTIONED a product (e.g. "discuss the prospectus"), DO NOT ask again which products interest them - you already know!
-- Read their messages carefully - extract any info they've already given (name, email, phone, school, product interest)
-- Required for demo: name, email, school, role, interests (but interests can be inferred from conversation)
-- Required for contact: name, email, question (school is optional)
-- Once you have what you need, IMMEDIATELY call the function. No more questions.
+DEMO BOOKING FLOW (CRITICAL - FOLLOW THIS EXACTLY):
+When someone wants to book a demo, you MUST ask these questions IN ORDER:
+1. "Which SMART products are you most interested in?" (unless they already mentioned one)
+2. "Would you prefer a Teams video call, or to meet in person?"
+3. "What week works best for you?" (let them choose)
+4. "And what time of day suits you?" (let them specify)
+5. ONLY THEN call schedule_meeting with all the details
+
+DO NOT call book_demo for demo requests - that only sends an email without booking.
+ALWAYS use schedule_meeting to actually book a calendar slot.
+
+CONTACT DETAILS:
+- BE EFFICIENT. Ask for name, email, school and role together: "Lovely! Could you share your name, email, school and role?"
+- Read their messages carefully - extract any info they've already given
+- If they've ALREADY MENTIONED a product, don't ask again - you already know!
 
 MEETING BOOKING (CRITICAL - READ CAREFULLY):
 You can book Teams meetings directly in Bob's calendar. When someone wants a demo:

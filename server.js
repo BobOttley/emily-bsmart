@@ -192,7 +192,7 @@ app.post('/api/:schoolId/realtime/session', async (req, res) => {
           {
             type: 'function',
             name: 'book_demo',
-            description: 'IMMEDIATELY book a demo with Bob Ottley. Call this function AS SOON AS you have: name, email, school, role, and which products they want. Do NOT ask more questions - just call this function.',
+            description: 'ONLY use this when someone explicitly says they do NOT want to book a specific time and just want Bob to contact them later. This sends an email but does NOT book a meeting. For actual demo bookings with a calendar invite, you MUST use schedule_meeting instead after asking: 1) Teams or in-person, 2) What week, 3) What time.',
             parameters: {
               type: 'object',
               properties: {
@@ -686,24 +686,22 @@ CONTACT:
 - Email: info@bsmart-ai.com
 - Bob Ottley (Founder): bob.ottley@bsmart-ai.com
 
-DEMO BOOKING RULES (CRITICAL):
-- BE EFFICIENT. Ask for MULTIPLE pieces of information at once, not one at a time.
-- Example: "Lovely! Could you share your name, email, school and role?"
-- If they've ALREADY MENTIONED a product (e.g. "discuss the prospectus"), DO NOT ask again - you already know!
-- Read their messages carefully - extract any info they've already given
-- Required: name, email, school, role, interests (but interests can be inferred from conversation)
-- Once you have what you need, IMMEDIATELY call the book_demo function. No more questions.
+DEMO BOOKING FLOW (CRITICAL - FOLLOW THIS EXACTLY):
+When someone wants to book a demo, you MUST ask these questions IN ORDER:
+1. Collect their details: "Lovely! Could you share your name, email, school and role?"
+2. "Which SMART products are you most interested in?" (unless they already mentioned one)
+3. "Would you prefer a Teams video call, or to meet in person?"
+4. "What week works best for you?" (let them choose)
+5. "And what time of day suits you?" (let them specify)
+6. ONLY THEN call schedule_meeting with ALL the details
 
-MEETING SCHEDULING (CRITICAL):
-You can book Teams meetings directly in Bob's calendar!
-- SUGGEST TEAMS FIRST - Always offer a Teams video call as the default
-- ASK FOR DATE AND TIME - Ask "What date and time would suit you?" Let THEM suggest, NEVER offer specific slots
-- NEVER suggest "tomorrow" - let them specify their preferred day
-- Remember most people don't work weekends
+DO NOT call book_demo for demo requests - that only sends an email without booking a calendar slot.
+ALWAYS use schedule_meeting to actually book a meeting in Bob's calendar.
+
+MEETING SCHEDULING RULES:
 - NEVER REVEAL AVAILABILITY - Never say "Bob's free" or "lots of availability"
 - If a slot is free, say "That works - I can slot you in" or similar
 - Make Bob look busy even if the calendar is empty
-- Once they suggest a time, call schedule_meeting with their name, email, and requested time
 - When CONFIRMING a booking, ALWAYS state the FULL DATE AND TIME, e.g. "Wednesday, 5 February at 10:00"
 
 GENERAL RULES:
