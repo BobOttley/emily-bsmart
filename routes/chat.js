@@ -142,7 +142,7 @@ router.post('/', async (req, res) => {
         },
         {
           name: 'schedule_meeting',
-          description: 'Schedule a Teams call with Bob Ottley. Use this when someone wants to book a demo call or meeting. First ask what time suits them, then call this function. ALWAYS suggest a Teams call as the default. Only offer in-person if the user specifically asks.',
+          description: 'Schedule a meeting with Bob Ottley. Can be Teams call or in-person visit. For in-person meetings, you MUST collect the location first. First ask what time suits them, then call this function.',
           parameters: {
             type: 'object',
             properties: {
@@ -163,6 +163,14 @@ router.post('/', async (req, res) => {
                 description: 'Type of meeting: teams (default) or in_person',
                 enum: ['teams', 'in_person'],
                 default: 'teams'
+              },
+              location: {
+                type: 'string',
+                description: 'REQUIRED for in_person meetings. The address or location, e.g. "St Mary School, London" or "bSMART office"'
+              },
+              school_name: {
+                type: 'string',
+                description: 'Name of their school'
               },
               topic: {
                 type: 'string',
@@ -338,33 +346,79 @@ router.post('/', async (req, res) => {
 
             response = followUp.choices[0].message.content;
           } else {
-            // Check availability (silently - never reveal to user)
-            const availability = await calendarService.checkAvailability(requestedTime);
+            // Check if in-person meeting needs location
+            const isInPerson = functionArgs.meeting_type === 'in_person';
+            if (isInPerson && !functionArgs.location) {
+              // Need location for in-person meeting
+              const scheduleResult = {
+                ok: false,
+                needs_location: true,
+                message: "For an in-person meeting, I need to know where. Shall Bob come to your school, or would you prefer to visit us?"
+              };
 
-            if (availability.available) {
-              // Slot is free - book the meeting
-              const meetingResult = await calendarService.createTeamsMeeting({
-                subject: `bSMART AI Demo - ${functionArgs.attendee_name}`,
-                startTime: requestedTime,
-                durationMinutes: 30,
-                attendeeEmail: functionArgs.attendee_email,
-                attendeeName: functionArgs.attendee_name,
-                description: `<p>Demo call with ${functionArgs.attendee_name}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Platform Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
+              const functionMessages = [
+                ...apiMessages,
+                assistantMessage,
+                { role: 'function', name: 'schedule_meeting', content: JSON.stringify(scheduleResult) }
+              ];
+
+              const followUp = await getOpenAIClient().chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: functionMessages,
+                temperature: 0.7,
+                max_tokens: 500
               });
 
-              if (meetingResult.success) {
-                // Use "busy Bob" language to make it seem like we got lucky
-                const busyPhrase = calendarService.getRandomPhrase('available');
+              response = followUp.choices[0].message.content;
+            } else {
+              // Check availability (silently - never reveal to user)
+              const availability = await calendarService.checkAvailability(requestedTime);
 
-                const scheduleResult = {
-                  ok: true,
-                  booked: true,
-                  busy_phrase: busyPhrase,
-                  meeting_time: requestedTime.toISOString(),
-                  formatted_time: `${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}`,
-                  teams_link: meetingResult.teamsLink,
-                  message: `${busyPhrase}! I've booked a Teams call for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}. A calendar invite has been sent to ${functionArgs.attendee_email}.`
-                };
+              if (availability.available) {
+                // Slot is free - book the meeting (Teams or In-Person)
+                let meetingResult;
+                let confirmMessage;
+
+                if (isInPerson) {
+                  // Create in-person meeting
+                  meetingResult = await calendarService.createInPersonMeeting({
+                    subject: `bSMART AI Meeting - ${functionArgs.attendee_name}`,
+                    startTime: requestedTime,
+                    durationMinutes: 60, // Longer for in-person
+                    attendeeEmail: functionArgs.attendee_email,
+                    attendeeName: functionArgs.attendee_name,
+                    location: functionArgs.location,
+                    description: `<p>In-person meeting with ${functionArgs.attendee_name}</p><p>School: ${functionArgs.school_name || 'Not specified'}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
+                  });
+                  confirmMessage = `I've booked an in-person meeting for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)} at ${functionArgs.location}. A calendar invite has been sent to ${functionArgs.attendee_email}.`;
+                } else {
+                  // Create Teams meeting
+                  meetingResult = await calendarService.createTeamsMeeting({
+                    subject: `bSMART AI Demo - ${functionArgs.attendee_name}`,
+                    startTime: requestedTime,
+                    durationMinutes: 30,
+                    attendeeEmail: functionArgs.attendee_email,
+                    attendeeName: functionArgs.attendee_name,
+                    description: `<p>Demo call with ${functionArgs.attendee_name}</p><p>School: ${functionArgs.school_name || 'Not specified'}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Platform Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
+                  });
+                  confirmMessage = `I've booked a Teams call for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}. A calendar invite has been sent to ${functionArgs.attendee_email}.`;
+                }
+
+                if (meetingResult.success) {
+                  // Use "busy Bob" language to make it seem like we got lucky
+                  const busyPhrase = calendarService.getRandomPhrase('available');
+
+                  const scheduleResult = {
+                    ok: true,
+                    booked: true,
+                    meeting_type: isInPerson ? 'in_person' : 'teams',
+                    busy_phrase: busyPhrase,
+                    meeting_time: requestedTime.toISOString(),
+                    formatted_time: `${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}`,
+                    teams_link: meetingResult.teamsLink || null,
+                    location: functionArgs.location || null,
+                    message: `${busyPhrase}! ${confirmMessage}`
+                  };
 
                 const functionMessages = [
                   ...apiMessages,
@@ -459,6 +513,7 @@ router.post('/', async (req, res) => {
               });
 
               response = followUp.choices[0].message.content;
+            }
             }
           }
         } catch (calendarErr) {
@@ -670,33 +725,44 @@ DEMO BOOKING / CONTACT RULES (CRITICAL):
 MEETING BOOKING (CRITICAL - READ CAREFULLY):
 You can book Teams meetings directly in Bob's calendar. When someone wants a demo:
 
-1. SUGGEST TEAMS FIRST - Always suggest a Teams video call as the default option
-   - Only offer in-person if the user specifically asks for it
-   - Example: "Shall we set up a Teams call? What time works for you?"
+1. OFFER BOTH OPTIONS - When they want to meet, offer Teams or In-Person:
+   - "Would you prefer a Teams video call, or would you like to meet in person?"
+   - Teams is the default/recommended option
+   - If they choose in-person, ASK FOR LOCATION
 
-2. ASK FOR TIME FIRST - Before booking, ask what time suits them
-   - Example: "When would suit you for a quick Teams call?"
+2. IN-PERSON MEETINGS:
+   - If they want to meet in person, you MUST ask WHERE
+   - "Lovely! Where would you like to meet - shall Bob come to your school, or would you prefer to visit us?"
+   - Get the location/address before booking
+   - For in-person, create a calendar event (not Teams meeting)
+
+3. ASK FOR TIME - Before booking, ask what time suits them
+   - Example: "When would suit you?"
    - Let THEM suggest the time, don't offer slots
 
-3. NEVER REVEAL CALENDAR AVAILABILITY - This is CRITICAL
+4. NEVER REVEAL CALENDAR AVAILABILITY - This is CRITICAL
    - NEVER say "Bob's calendar is free" or "lots of availability"
    - NEVER list available slots proactively
    - If a slot is free, say things like "Bob can squeeze that in" or "That happens to be free"
    - Make Bob look busy even if the calendar is empty
 
-4. COLLECT DETAILS FOR BOOKING:
+5. COLLECT DETAILS FOR BOOKING:
    - Name (you may already have this)
    - Email (required for calendar invite)
    - Preferred time (ask them first)
+   - Meeting type (Teams or in-person)
+   - Location (REQUIRED if in-person)
    - Topic (optional - infer from conversation)
 
-5. BOOKING FLOW:
+6. BOOKING FLOW:
+   - Ask Teams or in-person
+   - If in-person, ask location
    - Ask what time suits them
    - Once they give a time, call schedule_meeting
    - If the slot is busy, you'll get alternatives to suggest
-   - Confirm when booked: "Lovely, that's booked! Check your inbox for the Teams invite."
+   - Confirm when booked: "Lovely, that's booked! Check your inbox for the invite."
 
-6. HANDLING BUSY SLOTS:
+7. HANDLING BUSY SLOTS:
    - If their preferred time is taken, suggest alternatives naturally
    - Use phrases like "That one's taken, how about 2:30pm instead?"
    - Never apologise excessively or explain why it's busy

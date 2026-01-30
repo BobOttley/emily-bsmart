@@ -501,28 +501,215 @@
     msg.innerHTML = formattedText;
     history.appendChild(msg);
 
-    // Add contextual quick replies after bot messages
-    if (role === 'bot' && showContextButtons) {
-      const contextButtons = getContextualButtons(text);
-      if (contextButtons.length > 0) {
+    // Always add smart contextual buttons after bot messages
+    if (role === 'bot') {
+      const smartButtons = getSmartButtons(text);
+      if (smartButtons.length > 0) {
         const buttonsDiv = document.createElement('div');
         buttonsDiv.className = 'emily-context-buttons';
-        buttonsDiv.innerHTML = contextButtons.map(btn =>
-          `<button class="emily-context-btn" data-q="${escapeHtml(btn.query)}">${escapeHtml(btn.label)}</button>`
-        ).join('');
+        buttonsDiv.innerHTML = smartButtons.map(btn => {
+          if (btn.type === 'form') {
+            return `<button class="emily-context-btn emily-form-trigger" data-form="${btn.form}">${escapeHtml(btn.label)}</button>`;
+          }
+          return `<button class="emily-context-btn" data-q="${escapeHtml(btn.query)}">${escapeHtml(btn.label)}</button>`;
+        }).join('');
         history.appendChild(buttonsDiv);
 
         // Attach click handlers
         buttonsDiv.querySelectorAll('.emily-context-btn').forEach(btn => {
           btn.addEventListener('click', () => {
-            document.getElementById('emily-input').value = btn.dataset.q;
-            sendMessage();
+            if (btn.classList.contains('emily-form-trigger')) {
+              showBookingForm(btn.dataset.form);
+            } else {
+              document.getElementById('emily-input').value = btn.dataset.q;
+              sendMessage();
+            }
           });
         });
       }
     }
 
     history.scrollTop = history.scrollHeight;
+  }
+
+  // Smart contextual buttons based on conversation state
+  function getSmartButtons(responseText) {
+    const text = responseText.toLowerCase();
+    const buttons = [];
+
+    // Booking flow - asking for time
+    if (text.includes('when would') || text.includes('what time') || text.includes('what day') ||
+        text.includes('when suits') || text.includes('when works') || text.includes('teams call')) {
+      // Generate time suggestions
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const dayAfter = new Date(now);
+      dayAfter.setDate(dayAfter.getDate() + 2);
+
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+      buttons.push(
+        { label: 'Tomorrow 10am', query: `Tomorrow at 10am` },
+        { label: 'Tomorrow 2pm', query: `Tomorrow at 2pm` },
+        { label: `${dayNames[dayAfter.getDay()]} 10am`, query: `${dayNames[dayAfter.getDay()]} at 10am` },
+        { label: 'Next week', query: `Sometime next week` }
+      );
+      return buttons;
+    }
+
+    // Asking for contact details - show form button
+    if ((text.includes('name') && text.includes('email')) ||
+        text.includes('share your') || text.includes('your details') ||
+        text.includes('could you please share')) {
+      buttons.push({ label: '📝 Fill in my details', type: 'form', form: 'booking' });
+      return buttons;
+    }
+
+    // Alternative time offered
+    if (text.includes('how about') && (text.includes('am') || text.includes('pm') || text.includes(':'))) {
+      buttons.push(
+        { label: '✓ That works', query: 'Yes, that works for me' },
+        { label: 'Different time', query: 'Can we try a different time?' }
+      );
+      return buttons;
+    }
+
+    // Mentioned products - offer to learn more
+    if (text.includes('7 smart products') || text.includes('seven smart')) {
+      buttons.push(
+        { label: 'SMART Prospectus', query: 'Tell me about SMART Prospectus' },
+        { label: 'SMART Chat', query: 'Tell me about SMART Chat' },
+        { label: 'SMART CRM', query: 'Tell me about SMART CRM' },
+        { label: 'Book a Demo', query: "I'd like to book a demo" }
+      );
+      return buttons;
+    }
+
+    // Demo/booking mentioned - offer Teams or In-Person
+    if (text.includes('demo') || text.includes('bob') || text.includes('meeting') || text.includes('call')) {
+      if (!text.includes('booked') && !text.includes('calendar invite') && !text.includes('when would') && !text.includes('what time')) {
+        buttons.push(
+          { label: '💻 Teams Call', query: "I'd like a Teams video call" },
+          { label: '🏢 Visit In Person', query: "I'd prefer to meet in person" },
+          { label: 'Ask a question first', query: 'I have a question before booking' }
+        );
+        return buttons;
+      }
+    }
+
+    // In-person meeting - need to ask location
+    if (text.includes('in person') || text.includes('in-person') || text.includes('meet you') || text.includes('visit')) {
+      if (text.includes('where') || text.includes('location')) {
+        // Emily is asking for location - no buttons needed, they type
+      } else if (!text.includes('booked')) {
+        buttons.push(
+          { label: 'At my school', query: 'Can you come to my school?' },
+          { label: 'At your office', query: 'I can visit your office' },
+          { label: 'Actually, Teams is fine', query: "Actually let's do a Teams call instead" }
+        );
+        return buttons;
+      }
+    }
+
+    // Successfully booked
+    if (text.includes('booked') && text.includes('calendar invite')) {
+      buttons.push(
+        { label: 'Thanks!', query: 'Thank you!' },
+        { label: 'Learn more about products', query: 'Tell me more about what bSMART offers' }
+      );
+      return buttons;
+    }
+
+    // Pricing mentioned
+    if (text.includes('pricing') || text.includes('cost') || text.includes('price')) {
+      buttons.push(
+        { label: 'Book pricing call', query: 'Can I book a call to discuss pricing?' },
+        { label: 'What affects price?', query: 'What factors affect the pricing?' }
+      );
+      return buttons;
+    }
+
+    // General conversation - offer main actions
+    if (buttons.length === 0 && text.length > 50) {
+      buttons.push(
+        { label: 'Book a Demo', query: "I'd like to book a demo with Bob" },
+        { label: 'See Products', query: 'What are the 7 SMART products?' }
+      );
+    }
+
+    return buttons;
+  }
+
+  // Show inline booking form
+  function showBookingForm(formType) {
+    const history = document.getElementById('emily-chat-history');
+
+    // Remove any existing form
+    const existingForm = document.getElementById('emily-booking-form');
+    if (existingForm) existingForm.remove();
+
+    const formHtml = `
+      <div id="emily-booking-form" class="emily-booking-form">
+        <div class="emily-form-title">Your Details</div>
+        <input type="text" id="emily-form-name" placeholder="Your name" class="emily-form-input" />
+        <input type="email" id="emily-form-email" placeholder="Email address" class="emily-form-input" />
+        <input type="text" id="emily-form-school" placeholder="School name" class="emily-form-input" />
+        <input type="text" id="emily-form-role" placeholder="Your role (e.g. Head of Admissions)" class="emily-form-input" />
+        <div class="emily-form-buttons">
+          <button id="emily-form-cancel" class="emily-form-btn emily-form-btn--cancel">Cancel</button>
+          <button id="emily-form-submit" class="emily-form-btn emily-form-btn--submit">Submit</button>
+        </div>
+      </div>
+    `;
+
+    history.insertAdjacentHTML('beforeend', formHtml);
+    history.scrollTop = history.scrollHeight;
+
+    // Focus first input
+    document.getElementById('emily-form-name').focus();
+
+    // Attach handlers
+    document.getElementById('emily-form-cancel').addEventListener('click', () => {
+      document.getElementById('emily-booking-form').remove();
+    });
+
+    document.getElementById('emily-form-submit').addEventListener('click', submitBookingForm);
+
+    // Allow Enter to move between fields, submit on last field
+    const inputs = document.querySelectorAll('.emily-form-input');
+    inputs.forEach((input, idx) => {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (idx < inputs.length - 1) {
+            inputs[idx + 1].focus();
+          } else {
+            submitBookingForm();
+          }
+        }
+      });
+    });
+  }
+
+  function submitBookingForm() {
+    const name = document.getElementById('emily-form-name').value.trim();
+    const email = document.getElementById('emily-form-email').value.trim();
+    const school = document.getElementById('emily-form-school').value.trim();
+    const role = document.getElementById('emily-form-role').value.trim();
+
+    if (!name || !email) {
+      alert('Please enter at least your name and email');
+      return;
+    }
+
+    // Remove the form
+    document.getElementById('emily-booking-form').remove();
+
+    // Send as a message
+    const detailsMessage = `${name}, ${email}, ${school || 'Not specified'}, ${role || 'Not specified'}`;
+    document.getElementById('emily-input').value = detailsMessage;
+    sendMessage();
   }
 
   function formatMessage(text) {
@@ -1227,6 +1414,66 @@
       .emily-msg.emily-proactive {
         background: linear-gradient(135deg, rgba(255,159,28,0.1) 0%, rgba(255,184,77,0.1) 100%);
         border-color: rgba(255,159,28,0.3);
+      }
+
+      /* Inline Booking Form */
+      .emily-booking-form {
+        background: #fff;
+        border: 2px solid var(--emily-primary);
+        border-radius: 12px;
+        padding: 16px;
+        margin: 12px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      .emily-form-title {
+        font-weight: 600;
+        color: var(--emily-primary);
+        margin-bottom: 12px;
+        font-size: 14px;
+      }
+      .emily-form-input {
+        width: 100%;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      .emily-form-input:focus {
+        outline: none;
+        border-color: var(--emily-primary);
+        box-shadow: 0 0 0 2px rgba(26, 95, 90, 0.1);
+      }
+      .emily-form-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .emily-form-btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .emily-form-btn--cancel {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        color: #666;
+      }
+      .emily-form-btn--cancel:hover {
+        background: #eee;
+      }
+      .emily-form-btn--submit {
+        background: var(--emily-primary);
+        border: none;
+        color: #fff;
+      }
+      .emily-form-btn--submit:hover {
+        filter: brightness(1.1);
       }
 
       /* Mobile */

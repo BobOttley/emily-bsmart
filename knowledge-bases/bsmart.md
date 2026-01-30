@@ -169,3 +169,55 @@ It varies by school size and products. Book a demo and we'll give you a tailored
 
 **Is our data secure?**
 Yes. We use enterprise-grade security and are fully GDPR compliant.
+
+---
+
+## Integrations
+
+### Microsoft 365 Integration
+bSMART integrates seamlessly with Microsoft 365:
+- **Calendar:** Emily can check calendar availability and book meetings directly in Outlook calendars
+- **Teams:** Automatically creates Teams meetings with video call links
+- **Email:** Can send emails via Microsoft Graph API with proper authentication
+- **Azure AD:** Secure OAuth2 authentication for all Microsoft services
+
+### Google Workspace Integration
+bSMART also integrates with Google Workspace:
+- **Gmail:** Send personalised emails through Gmail with proper authentication
+- **Google Calendar:** Check availability and book meetings
+- **Google Meet:** Create video meeting links automatically
+
+### How Calendar Integration Works
+When Emily books a meeting:
+1. She checks the school's calendar for availability (without revealing empty slots)
+2. Books either a Teams/Google Meet call or an in-person meeting
+3. Sends calendar invites automatically to all attendees
+4. The meeting appears in Outlook/Google Calendar with all details
+
+### Why This Matters
+- **No double-booking:** Emily sees real-time availability
+- **Instant confirmation:** Families get calendar invites immediately
+- **Professional experience:** Video call links included automatically
+- **No manual work:** Staff don't need to send calendar invites
+
+---
+
+## Technical Capabilities
+
+### What Emily Can Do
+Emily (the AI assistant) can:
+- Answer questions using verified school information
+- Book visits and events
+- Schedule Teams calls or in-person meetings
+- Send calendar invites directly
+- Capture enquiry details
+- Hand off to human staff when needed
+- Speak in 100+ languages
+- Navigate users around websites and prospectuses
+
+### What Emily Cannot Do (By Design)
+- Make up information not in the knowledge base
+- Access sensitive student data
+- Override staff decisions
+- Make financial commitments
+- Share other families' information

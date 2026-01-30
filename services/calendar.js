@@ -499,10 +499,106 @@ function getRandomPhrase(type) {
   return phrases[Math.floor(Math.random() * phrases.length)];
 }
 
+/**
+ * Create an in-person meeting (calendar event without Teams)
+ *
+ * @param {Object} params - Meeting parameters
+ * @param {string} params.subject - Meeting subject
+ * @param {Date} params.startTime - Start time
+ * @param {number} params.durationMinutes - Duration (default 60 for in-person)
+ * @param {string} params.attendeeEmail - Attendee's email
+ * @param {string} params.attendeeName - Attendee's name
+ * @param {string} params.location - Meeting location (required)
+ * @param {string} params.description - Meeting description
+ * @returns {Object} Meeting details
+ */
+async function createInPersonMeeting(params) {
+  const {
+    subject,
+    startTime,
+    durationMinutes = 60, // Longer default for in-person
+    attendeeEmail,
+    attendeeName,
+    location,
+    description = ''
+  } = params;
+
+  try {
+    const token = await getAccessToken();
+    const bobEmail = getBobEmail();
+
+    const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
+
+    // Create event without Teams meeting
+    const eventData = {
+      subject: subject || `bSMART AI Meeting with ${attendeeName}`,
+      body: {
+        contentType: 'HTML',
+        content: description || `<p>In-person meeting with ${attendeeName}</p><p>Location: ${location}</p><p>Booked by Emily (AI Assistant)</p>`
+      },
+      start: {
+        dateTime: startTime.toISOString().replace('Z', ''),
+        timeZone: 'GMT Standard Time'
+      },
+      end: {
+        dateTime: endTime.toISOString().replace('Z', ''),
+        timeZone: 'GMT Standard Time'
+      },
+      location: {
+        displayName: location
+      },
+      attendees: [
+        {
+          emailAddress: {
+            address: attendeeEmail,
+            name: attendeeName
+          },
+          type: 'required'
+        }
+      ],
+      isOnlineMeeting: false // No Teams link
+    };
+
+    const response = await fetch(`https://graph.microsoft.com/v1.0/users/${bobEmail}/events`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(eventData)
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Create in-person meeting error:', error);
+      throw new Error(`Failed to create meeting: ${response.status}`);
+    }
+
+    const meeting = await response.json();
+
+    return {
+      success: true,
+      eventId: meeting.id,
+      location: location,
+      startTime: meeting.start.dateTime,
+      endTime: meeting.end.dateTime,
+      subject: meeting.subject
+    };
+
+  } catch (err) {
+    console.error('Create in-person meeting error:', err);
+    return {
+      success: false,
+      error: err.message
+    };
+  }
+}
+
 module.exports = {
   checkAvailability,
   findAvailableSlots,
   createTeamsMeeting,
+  createInPersonMeeting,
   parseTimeRequest,
   suggestAlternatives,
   getRandomPhrase,
