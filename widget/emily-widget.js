@@ -1476,8 +1476,12 @@
         opacity: 0;
         transform: translateY(20px) scale(0.9);
         pointer-events: none;
+        visibility: hidden;
+        display: none;
       }
       .emily-bubble-visible {
+        display: flex;
+        visibility: visible;
         opacity: 1;
         transform: translateY(0) scale(1);
         pointer-events: auto;
