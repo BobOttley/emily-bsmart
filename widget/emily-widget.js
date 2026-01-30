@@ -683,6 +683,17 @@
       return buttons;
     }
 
+    // After qualification reflection: "exactly how Emily works on a school website"
+    if (text.includes('exactly how emily works') || text.includes('what i\'m doing right now is')) {
+      console.log('QUALIFICATION REFLECTION DETECTED');
+      buttons.push(
+        { label: 'Try as a parent', query: "Let me try asking as a parent would" },
+        { label: 'Tell me more', query: 'Tell me more about what Emily can do' },
+        { label: 'Book a call', query: "I'd like to book a call with Bob" }
+      );
+      return buttons;
+    }
+
     // After mirror moment or demo explanation - offer next steps
     if (text.includes('hardest part to fake') || text.includes('not a scripted demo') ||
         text.includes('same emily that sits on school websites')) {
