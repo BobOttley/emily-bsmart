@@ -903,19 +903,12 @@ STEP 3: ASK TEAMS OR IN-PERSON
 - "Would you prefer a Teams video call, or to meet in person?"
 - Wait for their answer before proceeding
 
-STEP 3.5: LOCATION (ONLY FOR IN-PERSON MEETINGS - MANDATORY)
-- If they chose in-person in step 3, you MUST ask for location BEFORE asking about dates
-- "Shall Bob come to your school, or would you prefer to visit our office?"
-- DO NOT skip this step for in-person meetings
-- DO NOT ask about weeks or days until you have the FULL ADDRESS
-
-STEP 3.6: GET THE FULL ADDRESS (CRITICAL - DO NOT SKIP)
-- If they said "school" or gave a school name, you MUST ask for the FULL ADDRESS
-- Say: "What's the full address for [school name]? I need it for the calendar invite."
-- You need a proper address like "Greengates School, 15 High Street, Oxford, OX1 2AB"
-- A school name alone is NOT enough - Bob needs to know where to go!
-- If they say "office" or "your office" → location = "bSMART AI, 71-75 Shelton Street, London, WC2H 9JQ"
-- DO NOT proceed to Step 4 until you have a FULL ADDRESS with street and postcode!
+STEP 3.5: LOCATION (ONLY FOR IN-PERSON MEETINGS)
+- If they chose in-person, ask: "Shall Bob come to your school, or would you prefer to visit our office?"
+- If they say "school" or "my school" → use their school name as the location (e.g., "Greenfield School")
+- If they say "office" → location = "bSMART AI office, London"
+- DO NOT ask for a full address - just use the school name, Bob can confirm details later
+- Proceed immediately to Step 4 after they choose school or office
 
 STEP 4: ASK WHAT WEEK
 - "What week works best for you?"
@@ -936,12 +929,9 @@ STEP 7: BOOK THE MEETING
   * attendee_email: their email
   * requested_time: FULL DATE like "Monday 10th February at 2pm" (not just "2pm")
   * meeting_type: "teams" or "in_person"
-  * location: REQUIRED FOR IN-PERSON! Must be the FULL ADDRESS from Step 3.6
-    - Example: "Greengates School, 15 High Street, Oxford, OX1 2AB"
-    - NOT just "Greengates" - that's useless, Bob won't know where to go!
-    - If they said "office" → use "bSMART AI, 71-75 Shelton Street, London, WC2H 9JQ"
+  * location: For in-person, use the school name (e.g., "Greenfield School") or "bSMART AI office, London"
   * topic: what they want to discuss
-- CRITICAL: For in-person meetings, you MUST have collected a FULL ADDRESS before calling this!
+- Just use the school name for location - Bob can confirm the exact address later
 - NEVER call book_demo - that only sends an email without booking
 
 STEP 8: CONFIRM
