@@ -78,6 +78,58 @@ router.post('/', async (req, res) => {
   }
 
   try {
+    // Check if there's a pending booking waiting for an address
+    if (conversation.pendingBooking && message && message.length > 5) {
+      // User probably just provided an address - complete the booking
+      console.log('PENDING BOOKING DETECTED - attempting to complete with address:', message);
+
+      const pending = conversation.pendingBooking;
+      const requestedTime = new Date(pending.requestedTime);
+
+      // Use the message as the location (it should be the address they just typed)
+      const location = message;
+
+      console.log('COMPLETING PENDING BOOKING:');
+      console.log('  attendeeName:', pending.attendeeName);
+      console.log('  attendeeEmail:', pending.attendeeEmail);
+      console.log('  location:', location);
+      console.log('  time:', requestedTime.toString());
+
+      try {
+        const meetingResult = await calendarService.createInPersonMeeting({
+          subject: `bSMART AI Meeting - ${pending.attendeeName}`,
+          startTime: requestedTime,
+          durationMinutes: 60,
+          attendeeEmail: pending.attendeeEmail,
+          attendeeName: pending.attendeeName,
+          location: location,
+          description: `<p>In-person meeting with ${pending.attendeeName}</p><p>Location: ${location}</p><p>Topic: ${pending.topic}</p><p>Booked by Emily (AI Assistant)</p>`
+        });
+
+        console.log('PENDING BOOKING RESULT:', JSON.stringify(meetingResult, null, 2));
+
+        // Clear pending booking
+        delete conversation.pendingBooking;
+
+        if (meetingResult.success) {
+          const confirmMessage = `That's booked for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)} at ${location}. A calendar invite has been sent to ${pending.attendeeEmail}.`;
+
+          conversation.messages.push({ role: 'user', content: message });
+          conversation.messages.push({ role: 'assistant', content: confirmMessage });
+
+          return res.json({
+            success: true,
+            response: confirmMessage,
+            session_id: sessionId,
+            school: school.shortName
+          });
+        }
+      } catch (bookingErr) {
+        console.error('Failed to complete pending booking:', bookingErr);
+        // Fall through to normal flow
+      }
+    }
+
     // Load knowledge base (use More House demo KB if in demo mode)
     const knowledgeBase = loadKnowledgeBase(school, conversation.demoMode);
 
@@ -383,12 +435,23 @@ router.post('/', async (req, res) => {
             console.log('MEETING TYPE CHECK: isInPerson=', isInPerson, 'aiLocation=', functionArgs.location, 'storedSchool=', conversation.userDetails?.school, 'resolved=', resolvedLocation);
 
             if (isInPerson && !resolvedLocation) {
-              // Need location for in-person meeting - no fallback available
-              console.log('MISSING LOCATION - no AI location and no stored school');
+              // Need location for in-person meeting - store pending booking details
+              console.log('MISSING LOCATION - storing pending booking for when address is provided');
+
+              // Store the booking details so we can complete it when address arrives
+              conversation.pendingBooking = {
+                attendeeName,
+                attendeeEmail,
+                requestedTime: requestedTime.toISOString(),
+                meetingType: 'in_person',
+                topic: functionArgs.topic || 'bSMART AI Demo'
+              };
+              console.log('STORED PENDING BOOKING:', conversation.pendingBooking);
+
               const scheduleResult = {
                 ok: false,
                 needs_location: true,
-                message: "For an in-person meeting, I need to know where. Shall Bob come to your school, or would you prefer to visit us?"
+                message: "What's the full address? I need it for the calendar invite. Once you give me that, I'll book it straight away."
               };
 
               const functionMessages = [
