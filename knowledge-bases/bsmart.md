@@ -3,7 +3,7 @@
 ## Company Overview
 
 ### What is bSMART AI?
-bSMART AI is the complete admissions ecosystem for independent schools. We provide eight integrated products — SMART Prospectus, SMART Chat, SMART Voice, SMART Phone, SMART CRM, SMART Email, SMART Booking, and Analytics — that work together to make every parent interaction genuinely personal, automatically.
+bSMART AI is the complete admissions ecosystem for independent schools. We provide seven integrated products — SMART Prospectus, SMART Chat, SMART Voice, SMART CRM, SMART Email, SMART Booking, and Analytics — that work together to make every parent interaction genuinely personal, automatically.
 
 ### The Problem We Solve
 Most school communications feel generic and disconnected. A parent chats on your website, fills in an enquiry form, books a tour, receives a prospectus — but each interaction feels like starting over. bSMART connects everything so every touchpoint builds on what you already know.
@@ -16,7 +16,7 @@ Independent schools — boarding schools with international recruitment, day sch
 
 ---
 
-## The Eight SMART Products
+## The Seven SMART Products
 
 ### 1. SMART Prospectus
 Interactive, personalised digital prospectus. Each family gets a unique link tailored to their interests.
@@ -48,17 +48,7 @@ Emily with voice. Natural spoken conversations via website widget or prospectus.
 - Engagement tracking
 - 100+ languages supported
 
-### 4. SMART Phone
-Emily answering your admissions telephone line. Instant pickup, natural conversation, warm handoff to staff.
-
-**Features:**
-- 24/7 call handling
-- Warm handoff (briefs staff before transfer)
-- Full call transcription
-- International language support
-- All calls logged to CRM
-
-### 5. SMART CRM
+### 4. SMART CRM
 Your admissions command centre. Every interaction from every channel in one place.
 
 **Features:**
@@ -69,7 +59,7 @@ Your admissions command centre. Every interaction from every channel in one plac
 - Pipeline tracking and forecasting
 - See chat transcripts, call logs, prospectus views all together
 
-### 6. SMART Email
+### 5. SMART Email
 Every email personalised using what you know about the family. No more generic templates.
 
 **Email Types:**
@@ -80,7 +70,7 @@ Every email personalised using what you know about the family. No more generic t
 - Tour guide briefing cards
 - Re-engagement sequences
 
-### 7. SMART Booking
+### 6. SMART Booking
 Manages all admissions events — open days, private tours, taster days.
 
 **Features:**
@@ -90,7 +80,7 @@ Manages all admissions events — open days, private tours, taster days.
 - Post-visit feedback collection
 - Automatic follow-up sequences
 
-### 8. Analytics
+### 7. Analytics
 Data insights across the entire family journey.
 
 **Features:**
@@ -110,8 +100,7 @@ When a parent visits your website:
 3. They can book a visit through SMART Booking
 4. Everything is logged in SMART CRM
 5. SMART Email sends personalised follow-ups
-6. If they call, SMART Phone handles it and logs to CRM
-7. Analytics shows you the complete picture
+6. Analytics shows you the complete picture
 
 Every touchpoint builds on the last. No family ever feels like they're starting over.
 
@@ -125,7 +114,7 @@ Start with what you need most. Data connects automatically when you add more pro
 - Add products as needed
 
 ### Enterprise Suite
-All eight components fully integrated with dedicated onboarding and support.
+All seven components fully integrated with dedicated onboarding and support.
 
 ---
 
@@ -172,7 +161,7 @@ No. Emily only uses verified information from your school's knowledge base. She 
 **Can we try before we buy?**
 Yes! Book a demo and we'll show you Emily working with real school examples.
 
-**Do we need all eight products?**
+**Do we need all seven products?**
 No. Most schools start with Chat and CRM, then add more as needed. Everything connects automatically.
 
 **How does pricing work?**

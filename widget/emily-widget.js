@@ -168,7 +168,7 @@
 
         <!-- Welcome -->
         <div id="emily-welcome">
-          Hello! I'm Emily from bSMART AI. I help schools transform their admissions with AI. Ask me about our 8 SMART products, or book a demo!
+          Hello! I'm Emily from bSMART AI. I help schools transform their admissions with AI. Ask me about our 7 SMART products, or book a demo!
         </div>
 
         <!-- Chat History -->
@@ -294,39 +294,14 @@
   // =========================================================================
 
   function setupProactiveEngagement() {
-    // Auto-open chat after 8 seconds with a welcome message
-    setTimeout(() => {
-      if (!isOpen && !hasAutoOpened) {
-        hasAutoOpened = true;
-        toggleChat();
-        // Add a proactive message from Emily
-        setTimeout(() => {
-          addProactiveMessage("Hello! I'm Emily. I noticed you're exploring our website. I can tell you about any of our SMART products, answer questions, or help book a demo. What would you like to know?");
-        }, 500);
-      }
-    }, 8000);
+    // Disabled auto-open - let users click the bubble to open
+    // The Emily bubble/button remains visible for users to click when ready
 
-    // After 30 seconds, if still open and on a section, comment on it
-    setTimeout(() => {
-      if (isOpen && currentViewingSection && !hasShownWelcome) {
-        hasShownWelcome = true;
-        const sectionLabel = currentViewingSection.label || currentViewingSection.sectionId;
-        addProactiveMessage(`I can see you're looking at "${sectionLabel}" — would you like me to explain more about it?`);
-      }
-    }, 30000);
+    console.log('Emily: Bubble visible, waiting for user to click');
+  }
 
-    // Exit intent - open chat if they try to leave
-    document.addEventListener('mouseout', (e) => {
-      if (e.clientY < 10 && !exitIntentShown && !isOpen) {
-        exitIntentShown = true;
-        toggleChat();
-        setTimeout(() => {
-          addProactiveMessage("Before you go — I can answer any questions about SMART AI, or book you a quick demo with Bob. Is there anything I can help with?");
-        }, 500);
-      }
-    });
-
-    console.log('Emily: Proactive engagement enabled');
+  function hideBubble() {
+    // Stub function - no external bubble to hide
   }
 
   function addProactiveMessage(text) {
@@ -670,7 +645,7 @@
   function getQuickRepliesHtml() {
     // Default quick replies for bSMART sales
     const defaultReplies = [
-      { label: 'See All Products', query: 'What are the 8 SMART products?' },
+      { label: 'See All Products', query: 'What are the 7 SMART products?' },
       { label: 'Book a Demo', query: 'I\'d like to book a demo with Bob' },
       { label: 'Contact Us', query: 'I have a question and would like someone to contact me' },
       { label: 'How It Works', query: 'How does bSMART connect everything together?' }

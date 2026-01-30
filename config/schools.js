@@ -30,7 +30,7 @@ const schools = {
     },
     // Initial quick replies shown at start
     quickReplies: [
-      { label: 'See All Products', query: 'What are the 8 SMART products?' },
+      { label: 'See All Products', query: 'What are the 7 SMART products?' },
       { label: 'Book a Demo', query: 'I\'d like to book a demo with Bob' },
       { label: 'Contact Us', query: 'I have a question and would like someone to contact me' },
       { label: 'How It Works', query: 'How does bSMART connect everything together?' }
@@ -42,7 +42,6 @@ const schools = {
         { label: 'SMART Prospectus', query: 'Tell me more about SMART Prospectus' },
         { label: 'SMART Chat', query: 'How does SMART Chat work?' },
         { label: 'SMART Voice', query: 'What can SMART Voice do?' },
-        { label: 'SMART Phone', query: 'Explain SMART Phone for me' },
         { label: 'SMART CRM', query: 'What makes SMART CRM different?' },
         { label: 'SMART Email', query: 'How does SMART Email personalise?' },
         { label: 'SMART Booking', query: 'Tell me about SMART Booking' },
