@@ -657,11 +657,14 @@ async function createInPersonMeeting(params) {
       isOnlineMeeting: false // No Teams link
     };
 
+    console.log('CALENDAR: Creating in-person meeting with data:', JSON.stringify(eventData, null, 2));
+
     const response = await fetch(`https://graph.microsoft.com/v1.0/users/${bobEmail}/events`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Prefer': 'outlook.timezone="GMT Standard Time"'
       },
       body: JSON.stringify(eventData)
     });
@@ -669,10 +672,12 @@ async function createInPersonMeeting(params) {
     if (!response.ok) {
       const error = await response.text();
       console.error('Create in-person meeting error:', error);
-      throw new Error(`Failed to create meeting: ${response.status}`);
+      throw new Error(`Failed to create meeting: ${response.status} - ${error}`);
     }
 
     const meeting = await response.json();
+    console.log('CALENDAR: Meeting created successfully, ID:', meeting.id);
+    console.log('CALENDAR: Attendees should receive invite at:', attendeeEmail);
 
     return {
       success: true,
