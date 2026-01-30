@@ -301,14 +301,13 @@
 
   function setupProactiveEngagement() {
     const bubble = document.getElementById('emily-bubble');
-    const bubbleText = document.getElementById('emily-bubble-text');
     const bubbleClose = document.getElementById('emily-bubble-close');
 
-    // Show proactive bubble after 8 seconds
+    // Show contextual bubble after 8 seconds based on what section they're viewing
     setTimeout(() => {
       if (!isOpen && !hasAutoOpened) {
         hasAutoOpened = true;
-        showBubble("Hi! I'm Emily. Want to learn about our 7 SMART products or book a demo?");
+        showContextualBubble();
       }
     }, 8000);
 
@@ -327,6 +326,38 @@
     });
 
     console.log('Emily: Proactive bubble enabled');
+  }
+
+  // Contextual messages based on which section they're viewing
+  const sectionMessages = {
+    'hero': "Looking for a smarter way to handle admissions? I can show you how it all works!",
+    'ecosystem': "That's our connected ecosystem - every product shares one database. Want me to explain how it fits together?",
+    'product-prospectus': "SMART Prospectus creates a unique, personalised experience for every family. Want to know more?",
+    'product-chat': "That's me! I answer parent questions 24/7 and capture leads automatically. Shall I tell you more?",
+    'product-voice': "SMART Voice lets families have natural spoken conversations in 100+ languages. Interested?",
+    'product-crm': "SMART CRM is your admissions command centre - see every family's complete journey. Want details?",
+    'product-email': "SMART Email makes every message personal, not generic templates. Want to see how?",
+    'product-booking': "SMART Booking handles open days, tours, and taster days with automated follow-ups. Need more info?",
+    'products': "I see you're browsing our products. Want me to explain how they work together?",
+    'deployment': "Wondering whether to start small or go all-in? I can help you decide what's right for your school.",
+    'emily': "That's me! I power all the conversations - chat, voice, everything. Want to see what I can do?",
+    'default': "Hi! I noticed you're exploring. Want me to help you find what you're looking for?"
+  };
+
+  function showContextualBubble() {
+    let message = sectionMessages['default'];
+
+    if (currentViewingSection) {
+      const sectionId = currentViewingSection.sectionId || '';
+      // Check for exact match first, then partial matches
+      if (sectionMessages[sectionId]) {
+        message = sectionMessages[sectionId];
+      } else if (sectionId.startsWith('product-')) {
+        message = sectionMessages['products'];
+      }
+    }
+
+    showBubble(message);
   }
 
   function showBubble(text) {
