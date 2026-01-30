@@ -28,12 +28,11 @@ const schools = {
       tone: 'warm, professional, knowledgeable',
       greeting: "Hello! I'm Emily from bSMART AI. I help schools transform their admissions with AI. How can I help you today?"
     },
-    // Initial quick replies shown at start
+    // Initial quick replies - guide people into the demo experience
     quickReplies: [
-      { label: 'See All Products', query: 'What are the 7 SMART products?' },
-      { label: 'Book a Demo', query: 'I\'d like to book a demo with Bob' },
-      { label: 'Contact Us', query: 'I have a question and would like someone to contact me' },
-      { label: 'How It Works', query: 'How does bSMART connect everything together?' }
+      { label: 'Show Me How It Works', query: 'Show me how Emily works for schools', highlight: true },
+      { label: 'Book a Call', query: 'I\'d like to book a demo with Bob' },
+      { label: 'What Is This?', query: 'What is bSMART AI?' }
     ],
     // Contextual follow-up buttons based on topics
     contextualReplies: {
