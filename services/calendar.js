@@ -434,6 +434,23 @@ function parseTimeRequest(timeRequest) {
         if (targetDate < now) {
           targetDate = new Date(now.getFullYear() + 1, monthIndex, day);
         }
+
+        // Check if a day name was also given (e.g., "Tuesday, 9 February")
+        // If so, adjust the date to match the day name
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        for (let i = 0; i < dayNames.length; i++) {
+          if (text.includes(dayNames[i])) {
+            const actualDayOfWeek = targetDate.getDay();
+            if (actualDayOfWeek !== i) {
+              // Day name doesn't match date - adjust to the correct day in that week
+              const diff = i - actualDayOfWeek;
+              targetDate.setDate(targetDate.getDate() + diff);
+              console.log('CALENDAR: Adjusted to match day name', dayNames[i], '- new date:', targetDate.toDateString());
+            }
+            break;
+          }
+        }
+
         dateFound = true;
         console.log('CALENDAR: Parsed date:', targetDate.toDateString());
         break;

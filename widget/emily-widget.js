@@ -972,21 +972,14 @@
   }
 
   function formatMessage(text) {
-    // Convert numbered lists to formatted HTML
+    // Just return the text with basic HTML escaping - no fancy formatting
+    // This prevents "30." in times like "13:30." being treated as list items
     let formatted = escapeHtml(text);
 
-    // Convert patterns like "1. SMART Prospectus - description" to formatted items
-    formatted = formatted.replace(/(\d+)\.\s+(SMART\s+\w+)\s*[-–]\s*([^.!?]+[.!?]?)/g,
+    // Only format SMART product lists (1. SMART Prospectus - ...)
+    // Must start at beginning of line
+    formatted = formatted.replace(/^(\d+)\.\s+(SMART\s+\w+)\s*[-–]\s*(.+)$/gm,
       '<div class="emily-product-item"><span class="emily-product-num">$1.</span> <strong>$2</strong> - $3</div>');
-
-    // Convert remaining numbered items
-    formatted = formatted.replace(/(\d+)\.\s+([^.!?\n]+[.!?]?)/g,
-      '<div class="emily-list-item"><span class="emily-item-num">$1.</span> $2</div>');
-
-    // Wrap non-list content in paragraphs
-    if (!formatted.includes('emily-product-item') && !formatted.includes('emily-list-item')) {
-      formatted = `<p>${formatted}</p>`;
-    }
 
     return formatted;
   }
