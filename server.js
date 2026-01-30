@@ -458,7 +458,7 @@ app.post('/api/:schoolId/realtime/tool/schedule_meeting', async (req, res) => {
       const meetingResult = await calendarService.createTeamsMeeting({
         subject: `bSMART AI Demo - ${attendee_name}`,
         startTime: requestedTime,
-        durationMinutes: 30,
+        durationMinutes: 60,
         attendeeEmail: attendee_email,
         attendeeName: attendee_name,
         description: `<p>Demo call with ${attendee_name}</p><p>Topic: ${topic || 'bSMART AI Platform'}</p><p>Booked by Emily (Voice Assistant)</p>`

@@ -396,7 +396,7 @@ router.post('/', async (req, res) => {
                   meetingResult = await calendarService.createTeamsMeeting({
                     subject: `bSMART AI Demo - ${functionArgs.attendee_name}`,
                     startTime: requestedTime,
-                    durationMinutes: 30,
+                    durationMinutes: 60,
                     attendeeEmail: functionArgs.attendee_email,
                     attendeeName: functionArgs.attendee_name,
                     description: `<p>Demo call with ${functionArgs.attendee_name}</p><p>School: ${functionArgs.school_name || 'Not specified'}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Platform Demo'}</p><p>Booked by Emily (AI Assistant)</p>`

@@ -262,7 +262,7 @@ async function createTeamsMeeting(params) {
   const {
     subject,
     startTime,
-    durationMinutes = 30,
+    durationMinutes = 60,
     attendeeEmail,
     attendeeName,
     description = ''
