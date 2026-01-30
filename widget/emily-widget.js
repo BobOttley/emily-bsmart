@@ -604,8 +604,13 @@
     }
 
     // Emily asking about PRODUCTS - show ALL product options
-    if (text.includes('which products') || text.includes('what products') ||
-        text.includes('interested in discussing') || text.includes('products are you interested')) {
+    // Match: "which products", "which SMART products", "products are you interested", "products are you most interested"
+    const isAskingProducts = (text.includes('which') && text.includes('products')) ||
+                             (text.includes('what') && text.includes('products')) ||
+                             (text.includes('products') && text.includes('interested')) ||
+                             text.includes('interested in discussing');
+
+    if (isAskingProducts) {
       buttons.push(
         { label: 'SMART Prospectus', query: 'SMART Prospectus' },
         { label: 'SMART CRM', query: 'SMART CRM' },
