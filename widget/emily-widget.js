@@ -571,57 +571,22 @@
     if (text.includes('demo') && (text.includes('voice') || text.includes('chat') || text.includes('try') ||
         text.includes('show') || text.includes('experience') || text.includes('action'))) {
       buttons.push(
-        { label: '🎤 Try Voice Demo', query: "I'd like to try the voice demo with a real school example" },
-        { label: '💬 Try Chat Demo', query: "I'd like to try the chat demo with a real school example" },
-        { label: '📅 Book a Call Instead', query: "Actually, I'd prefer to book a call with Bob" }
+        { label: 'Try Voice Demo', query: "I'd like to try the voice demo with a real school example" },
+        { label: 'Try Chat Demo', query: "I'd like to try the chat demo with a real school example" },
+        { label: 'Book a Call Instead', query: "Actually, I'd prefer to book a call with Bob" }
       );
       return buttons;
     }
 
-    // Booking flow - asking for time OR asking for specific day
+    // Booking flow - Emily is asking for time preference
+    // DON'T show buttons - let the user type their preferred date/time
+    // This avoids offering weekends and lets them choose what suits them
     if (text.includes('when would') || text.includes('what time') || text.includes('what day') ||
-        text.includes('when suits') || text.includes('when works') || text.includes('teams call') ||
+        text.includes('when suits') || text.includes('when works') ||
         text.includes('specify a day') || text.includes('which day') || text.includes('specific day') ||
-        text.includes('next week') || text.includes('works best')) {
-      // Generate time suggestions
-      const now = new Date();
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-      // Check if they already said "next week" - offer specific days
-      if (text.includes('next week') || text.includes('specify')) {
-        // Find next Monday
-        const nextMonday = new Date(now);
-        nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7 || 7));
-
-        const tuesday = new Date(nextMonday);
-        tuesday.setDate(tuesday.getDate() + 1);
-
-        const wednesday = new Date(nextMonday);
-        wednesday.setDate(wednesday.getDate() + 2);
-
-        const thursday = new Date(nextMonday);
-        thursday.setDate(thursday.getDate() + 3);
-
-        buttons.push(
-          { label: 'Monday 10am', query: `Monday at 10am` },
-          { label: 'Tuesday 2pm', query: `Tuesday at 2pm` },
-          { label: 'Wednesday 10am', query: `Wednesday at 10am` },
-          { label: 'Thursday 2pm', query: `Thursday at 2pm` }
-        );
-      } else {
-        // Initial time question - offer tomorrow and day after
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const dayAfter = new Date(now);
-        dayAfter.setDate(dayAfter.getDate() + 2);
-
-        buttons.push(
-          { label: 'Tomorrow 10am', query: `Tomorrow at 10am` },
-          { label: 'Tomorrow 2pm', query: `Tomorrow at 2pm` },
-          { label: `${dayNames[dayAfter.getDay()]} 10am`, query: `${dayNames[dayAfter.getDay()]} at 10am` },
-          { label: 'Next week', query: `Sometime next week` }
-        );
-      }
+        text.includes('works best')) {
+      // Don't show time buttons - let user type their preference
+      // This ensures they pick a date/time that works for them
       return buttons;
     }
 
@@ -629,14 +594,14 @@
     if ((text.includes('name') && text.includes('email')) ||
         text.includes('share your') || text.includes('your details') ||
         text.includes('could you please share')) {
-      buttons.push({ label: '📝 Fill in my details', type: 'form', form: 'booking' });
+      buttons.push({ label: 'Fill in my details', type: 'form', form: 'booking' });
       return buttons;
     }
 
     // Alternative time offered
     if (text.includes('how about') && (text.includes('am') || text.includes('pm') || text.includes(':'))) {
       buttons.push(
-        { label: '✓ That works', query: 'Yes, that works for me' },
+        { label: 'That works', query: 'Yes, that works for me' },
         { label: 'Different time', query: 'Can we try a different time?' }
       );
       return buttons;
@@ -653,13 +618,12 @@
       return buttons;
     }
 
-    // Demo/booking mentioned - offer Teams or In-Person
+    // Demo/booking mentioned - offer Teams or In-Person (NO "Ask a question first")
     if (text.includes('demo') || text.includes('bob') || text.includes('meeting') || text.includes('call')) {
       if (!text.includes('booked') && !text.includes('calendar invite') && !text.includes('when would') && !text.includes('what time')) {
         buttons.push(
-          { label: '💻 Teams Call', query: "I'd like a Teams video call" },
-          { label: '🏢 Visit In Person', query: "I'd prefer to meet in person" },
-          { label: 'Ask a question first', query: 'I have a question before booking' }
+          { label: 'Teams Call', query: "I'd like a Teams video call" },
+          { label: 'Visit In Person', query: "I'd prefer to meet in person" }
         );
         return buttons;
       }
@@ -679,13 +643,10 @@
       }
     }
 
-    // Successfully booked
+    // Successfully booked - DON'T show any buttons
+    // The booking is complete, no need for more options
     if (text.includes('booked') && text.includes('calendar invite')) {
-      buttons.push(
-        { label: 'Thanks!', query: 'Thank you!' },
-        { label: 'Learn more about products', query: 'Tell me more about what bSMART offers' }
-      );
-      return buttons;
+      return buttons; // Return empty - no buttons needed after booking confirmed
     }
 
     // Pricing mentioned
@@ -1337,7 +1298,7 @@
         filter: brightness(1.1);
       }
 
-      /* Contextual Buttons (after bot messages) */
+      /* Contextual Buttons (after bot messages) - DIFFERENT from fixed quick replies */
       .emily-context-buttons {
         display: flex;
         flex-wrap: wrap;
@@ -1346,19 +1307,27 @@
         margin-bottom: 8px;
       }
       .emily-context-btn {
-        padding: 6px 12px;
-        background: #fff;
-        color: var(--emily-primary);
-        font-size: 11px;
-        border-radius: 16px;
-        border: 1px solid var(--emily-primary);
+        padding: 8px 14px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        color: #495057;
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
         cursor: pointer;
         transition: all 0.2s ease;
         white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       }
       .emily-context-btn:hover {
-        background: var(--emily-primary);
-        color: #fff;
+        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        border-color: #adb5bd;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      }
+      .emily-context-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.08);
       }
 
       /* Formatted Message Content */
