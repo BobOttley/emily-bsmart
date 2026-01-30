@@ -215,16 +215,7 @@
       <audio id="emily-audio" autoplay playsinline></audio>
 
       <!-- Proactive Bubble (appears outside chat) -->
-      <div id="emily-proactive-bubble" class="emily-bubble-hidden">
-        <button id="emily-bubble-close" aria-label="Dismiss">&times;</button>
-        <div id="emily-bubble-content">
-          <div id="emily-bubble-typing">
-            <span></span><span></span><span></span>
-          </div>
-          <div id="emily-bubble-text"></div>
-        </div>
-        <div id="emily-bubble-actions"></div>
-      </div>
+      <div id="emily-proactive-bubble" style="display:none;"></div>
     `;
 
     document.body.appendChild(container);
@@ -305,20 +296,6 @@
   // =========================================================================
 
   function setupProactiveEngagement() {
-    // Close bubble button
-    document.getElementById('emily-bubble-close')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      hideBubble();
-    });
-
-    // Clicking bubble opens chat
-    document.getElementById('emily-proactive-bubble')?.addEventListener('click', (e) => {
-      if (e.target.id !== 'emily-bubble-close') {
-        hideBubble();
-        if (!isOpen) toggleChat();
-      }
-    });
-
     // Initial welcome after 2 seconds
     setTimeout(() => {
       if (!isOpen && !hasShownWelcome) {
@@ -410,59 +387,82 @@
 
     lastBubbleTime = Date.now();
     const bubble = document.getElementById('emily-proactive-bubble');
-    const textEl = document.getElementById('emily-bubble-text');
-    const typingEl = document.getElementById('emily-bubble-typing');
-    const actionsEl = document.getElementById('emily-bubble-actions');
+    if (!bubble) return;
 
-    if (!bubble || !textEl) return;
+    // Build bubble content
+    bubble.innerHTML = `
+      <button id="emily-bubble-close" aria-label="Dismiss">&times;</button>
+      <div id="emily-bubble-content">
+        <div id="emily-bubble-typing" style="display:flex;">
+          <span></span><span></span><span></span>
+        </div>
+        <div id="emily-bubble-text" style="display:none;"></div>
+      </div>
+      <div id="emily-bubble-actions" style="display:none;"></div>
+    `;
 
-    // Reset and show bubble with typing animation
-    textEl.textContent = '';
-    textEl.style.display = 'none';
-    typingEl.style.display = 'flex';
-    actionsEl.innerHTML = '';
-    actionsEl.style.display = 'none';
-
+    // Show bubble
+    bubble.style.display = 'flex';
     bubble.className = 'emily-bubble-visible emily-bubble-' + type;
+
+    // Add close handler
+    document.getElementById('emily-bubble-close').addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideBubble();
+    });
+
+    // Clicking bubble opens chat
+    bubble.onclick = (e) => {
+      if (e.target.id !== 'emily-bubble-close' && !e.target.classList.contains('emily-bubble-btn')) {
+        hideBubble();
+        if (!isOpen) toggleChat();
+      }
+    };
 
     // Add pulse to toggle button
     const toggle = document.getElementById('emily-toggle');
     if (toggle) toggle.classList.add('emily-has-bubble');
 
+    const textEl = document.getElementById('emily-bubble-text');
+    const typingEl = document.getElementById('emily-bubble-typing');
+    const actionsEl = document.getElementById('emily-bubble-actions');
+
     // After "typing" delay, show the message
     setTimeout(() => {
-      typingEl.style.display = 'none';
-      textEl.style.display = 'block';
-      typeText(textEl, message, () => {
-        // After text is typed, show action buttons
-        if (actions.length > 0) {
-          actionsEl.style.display = 'flex';
-          actions.forEach(action => {
-            const btn = document.createElement('button');
-            btn.className = 'emily-bubble-btn';
-            btn.textContent = action.label;
-            btn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              hideBubble();
-              if (action.action === 'open') {
-                if (!isOpen) toggleChat();
-                if (action.message) {
-                  setTimeout(() => {
-                    document.getElementById('emily-input').value = action.message;
-                    sendMessage();
-                  }, 500);
+      if (typingEl) typingEl.style.display = 'none';
+      if (textEl) {
+        textEl.style.display = 'block';
+        typeText(textEl, message, () => {
+          // After text is typed, show action buttons
+          if (actions.length > 0 && actionsEl) {
+            actionsEl.style.display = 'flex';
+            actions.forEach(action => {
+              const btn = document.createElement('button');
+              btn.className = 'emily-bubble-btn';
+              btn.textContent = action.label;
+              btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hideBubble();
+                if (action.action === 'open') {
+                  if (!isOpen) toggleChat();
+                  if (action.message) {
+                    setTimeout(() => {
+                      document.getElementById('emily-input').value = action.message;
+                      sendMessage();
+                    }, 500);
+                  }
                 }
-              }
+              });
+              actionsEl.appendChild(btn);
             });
-            actionsEl.appendChild(btn);
-          });
-        }
-      });
+          }
+        });
+      }
     }, 1500);
 
     // Auto-hide after 15 seconds
     setTimeout(() => {
-      if (bubble.classList.contains('emily-bubble-visible')) {
+      if (bubble.style.display !== 'none') {
         hideBubble();
       }
     }, 15000);
@@ -486,7 +486,9 @@
   function hideBubble() {
     const bubble = document.getElementById('emily-proactive-bubble');
     if (bubble) {
-      bubble.className = 'emily-bubble-hidden';
+      bubble.style.display = 'none';
+      bubble.className = '';
+      bubble.innerHTML = '';
     }
     // Remove pulse from toggle
     const toggle = document.getElementById('emily-toggle');
