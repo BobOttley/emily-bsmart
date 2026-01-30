@@ -578,24 +578,50 @@
       return buttons;
     }
 
-    // Booking flow - asking for time
+    // Booking flow - asking for time OR asking for specific day
     if (text.includes('when would') || text.includes('what time') || text.includes('what day') ||
-        text.includes('when suits') || text.includes('when works') || text.includes('teams call')) {
+        text.includes('when suits') || text.includes('when works') || text.includes('teams call') ||
+        text.includes('specify a day') || text.includes('which day') || text.includes('specific day') ||
+        text.includes('next week') || text.includes('works best')) {
       // Generate time suggestions
       const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const dayAfter = new Date(now);
-      dayAfter.setDate(dayAfter.getDate() + 2);
-
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-      buttons.push(
-        { label: 'Tomorrow 10am', query: `Tomorrow at 10am` },
-        { label: 'Tomorrow 2pm', query: `Tomorrow at 2pm` },
-        { label: `${dayNames[dayAfter.getDay()]} 10am`, query: `${dayNames[dayAfter.getDay()]} at 10am` },
-        { label: 'Next week', query: `Sometime next week` }
-      );
+      // Check if they already said "next week" - offer specific days
+      if (text.includes('next week') || text.includes('specify')) {
+        // Find next Monday
+        const nextMonday = new Date(now);
+        nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7 || 7));
+
+        const tuesday = new Date(nextMonday);
+        tuesday.setDate(tuesday.getDate() + 1);
+
+        const wednesday = new Date(nextMonday);
+        wednesday.setDate(wednesday.getDate() + 2);
+
+        const thursday = new Date(nextMonday);
+        thursday.setDate(thursday.getDate() + 3);
+
+        buttons.push(
+          { label: 'Monday 10am', query: `Monday at 10am` },
+          { label: 'Tuesday 2pm', query: `Tuesday at 2pm` },
+          { label: 'Wednesday 10am', query: `Wednesday at 10am` },
+          { label: 'Thursday 2pm', query: `Thursday at 2pm` }
+        );
+      } else {
+        // Initial time question - offer tomorrow and day after
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dayAfter = new Date(now);
+        dayAfter.setDate(dayAfter.getDate() + 2);
+
+        buttons.push(
+          { label: 'Tomorrow 10am', query: `Tomorrow at 10am` },
+          { label: 'Tomorrow 2pm', query: `Tomorrow at 2pm` },
+          { label: `${dayNames[dayAfter.getDay()]} 10am`, query: `${dayNames[dayAfter.getDay()]} at 10am` },
+          { label: 'Next week', query: `Sometime next week` }
+        );
+      }
       return buttons;
     }
 
@@ -671,12 +697,19 @@
       return buttons;
     }
 
-    // General conversation - offer main actions
+    // General conversation - offer main actions (but NOT if we're mid-booking)
     if (buttons.length === 0 && text.length > 50) {
-      buttons.push(
-        { label: 'Book a Demo', query: "I'd like to book a demo with Bob" },
-        { label: 'See Products', query: 'What are the 7 SMART products?' }
-      );
+      // Don't show generic buttons if Emily is asking for specific info
+      const isAskingForInfo = text.includes('could you') || text.includes('please share') ||
+                              text.includes('please specify') || text.includes('what time') ||
+                              text.includes('which day') || text.includes('your name') ||
+                              text.includes('your email');
+      if (!isAskingForInfo) {
+        buttons.push(
+          { label: 'Book a Demo', query: "I'd like to book a demo with Bob" },
+          { label: 'See Products', query: 'What are the 7 SMART products?' }
+        );
+      }
     }
 
     return buttons;
