@@ -413,6 +413,12 @@ router.post('/', async (req, res) => {
                   // Use location from function args, OR fall back to stored school name from user details
                   const meetingLocation = functionArgs.location || conversation.userDetails?.school || 'Location to be confirmed';
 
+                  console.log('BOOKING IN-PERSON MEETING:');
+                  console.log('  attendeeName:', attendeeName);
+                  console.log('  attendeeEmail:', attendeeEmail);
+                  console.log('  location:', meetingLocation);
+                  console.log('  time:', requestedTime.toString());
+
                   meetingResult = await calendarService.createInPersonMeeting({
                     subject: `bSMART AI Meeting - ${attendeeName}`,
                     startTime: requestedTime,
@@ -435,6 +441,8 @@ router.post('/', async (req, res) => {
                   });
                   confirmMessage = `I've booked a Teams call for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}. A calendar invite has been sent to ${attendeeEmail}.`;
                 }
+
+                console.log('MEETING RESULT:', JSON.stringify(meetingResult, null, 2));
 
                 if (meetingResult.success) {
                   // Use "busy Bob" language to make it seem like we got lucky
