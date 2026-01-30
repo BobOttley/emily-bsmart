@@ -130,6 +130,28 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Check if we're waiting for address but user gave week/day/time - store it for later
+    if (conversation.waitingForAddress && message) {
+      const lowerMsg = message.toLowerCase();
+      // If it looks like an address (has numbers, street words, or postcode pattern)
+      const looksLikeAddress = /\d/.test(message) && (
+        /street|road|lane|avenue|drive|way|close|court|place|crescent/i.test(message) ||
+        /[A-Z]{1,2}\d{1,2}\s*\d[A-Z]{2}/i.test(message) // UK postcode
+      );
+
+      if (looksLikeAddress) {
+        console.log('ADDRESS DETECTED while waiting:', message);
+        // Store the address
+        conversation.collectedAddress = message;
+        delete conversation.waitingForAddress;
+      } else if (/next week|week after|monday|tuesday|wednesday|thursday|friday|^\d{1,2}(am|pm|:\d{2})/i.test(lowerMsg)) {
+        // User gave week/day/time but we need address - store it
+        console.log('STORING TIMING INFO while waiting for address:', message);
+        if (!conversation.collectedTiming) conversation.collectedTiming = [];
+        conversation.collectedTiming.push(message);
+      }
+    }
+
     // Load knowledge base (use More House demo KB if in demo mode)
     const knowledgeBase = loadKnowledgeBase(school, conversation.demoMode);
 
@@ -435,24 +457,61 @@ router.post('/', async (req, res) => {
             console.log('MEETING TYPE CHECK: isInPerson=', isInPerson, 'aiLocation=', functionArgs.location, 'storedSchool=', conversation.userDetails?.school, 'resolved=', resolvedLocation);
 
             if (isInPerson && !resolvedLocation) {
-              // Need location for in-person meeting - store pending booking details
-              console.log('MISSING LOCATION - storing pending booking for when address is provided');
+              // No location at all - use a default and let Bob confirm
+              console.log('NO LOCATION - using default, Bob can confirm');
+              // Just proceed with "Location TBC" - better than blocking the booking
+              const fallbackLocation = 'Location to be confirmed with ' + attendeeName;
 
-              // Store the booking details so we can complete it when address arrives
-              conversation.pendingBooking = {
-                attendeeName,
-                attendeeEmail,
-                requestedTime: requestedTime.toISOString(),
-                meetingType: 'in_person',
-                topic: functionArgs.topic || 'bSMART AI Demo'
-              };
-              console.log('STORED PENDING BOOKING:', conversation.pendingBooking);
+              console.log('BOOKING WITH FALLBACK LOCATION:', fallbackLocation);
 
-              const scheduleResult = {
-                ok: false,
-                needs_location: true,
-                message: "What's the full address? I need it for the calendar invite. Once you give me that, I'll book it straight away."
-              };
+              meetingResult = await calendarService.createInPersonMeeting({
+                subject: `bSMART AI Meeting - ${attendeeName}`,
+                startTime: requestedTime,
+                durationMinutes: 60,
+                attendeeEmail: attendeeEmail,
+                attendeeName: attendeeName,
+                location: fallbackLocation,
+                description: `<p>In-person meeting with ${attendeeName}</p><p>Location: To be confirmed</p><p>Topic: ${functionArgs.topic || 'bSMART AI Demo'}</p><p>Booked by Emily (AI Assistant)</p><p><strong>Please confirm the meeting location with ${attendeeName}.</strong></p>`
+              });
+
+              if (meetingResult.success) {
+                confirmMessage = `I've booked an in-person meeting for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}. Bob will confirm the exact location with you. A calendar invite has been sent to ${attendeeEmail}.`;
+
+                const scheduleResult = {
+                  ok: true,
+                  booked: true,
+                  meeting_type: 'in_person',
+                  busy_phrase: 'That works',
+                  meeting_time: requestedTime.toISOString(),
+                  formatted_time: `${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}`,
+                  location: fallbackLocation,
+                  message: confirmMessage,
+                  instructions: 'Confirm the booking. Mention Bob will confirm the exact location.'
+                };
+
+                console.log('MEETING RESULT:', JSON.stringify(meetingResult, null, 2));
+
+                const functionMessages = [
+                  ...apiMessages,
+                  assistantMessage,
+                  { role: 'function', name: 'schedule_meeting', content: JSON.stringify(scheduleResult) }
+                ];
+
+                const followUp = await getOpenAIClient().chat.completions.create({
+                  model: 'gpt-4o-mini',
+                  messages: functionMessages,
+                  temperature: 0.7,
+                  max_tokens: 500
+                });
+
+                response = followUp.choices[0].message.content;
+              } else {
+                // Booking failed - ask for location to try again
+                const scheduleResult = {
+                  ok: false,
+                  needs_location: true,
+                  message: "I couldn't complete the booking. Could you share the full address so I can try again?"
+                };
 
               const functionMessages = [
                 ...apiMessages,
@@ -468,6 +527,7 @@ router.post('/', async (req, res) => {
               });
 
               response = followUp.choices[0].message.content;
+              }
             } else {
               // Check availability (silently - never reveal to user)
               const availability = await calendarService.checkAvailability(requestedTime);
