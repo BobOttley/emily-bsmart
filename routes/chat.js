@@ -53,7 +53,9 @@ router.post('/', async (req, res) => {
       messages: [],
       familyContext: family_context || {},
       schoolId: school.id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      awaiting: null,        // 'address' | null - tracks what we're waiting for
+      pendingBooking: null   // stores booking details while waiting for address
     });
   }
 
@@ -78,21 +80,29 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    // Check if there's a pending booking waiting for an address
-    if (conversation.pendingBooking && message && message.length > 5) {
-      // User probably just provided an address - complete the booking
-      console.log('PENDING BOOKING DETECTED - attempting to complete with address:', message);
+    // ===============================
+    // ADDRESS CAPTURE (HARD STOP)
+    // This MUST run before ANY GPT logic
+    // ===============================
+    if (conversation.awaiting === 'address' && conversation.pendingBooking) {
+      const address = message.trim();
+
+      if (address.length < 5) {
+        return res.json({
+          success: true,
+          response: "Could you please share the full address, including postcode?",
+          session_id: sessionId,
+          school: school.shortName
+        });
+      }
 
       const pending = conversation.pendingBooking;
       const requestedTime = new Date(pending.requestedTime);
 
-      // Use the message as the location (it should be the address they just typed)
-      const location = message;
-
-      console.log('COMPLETING PENDING BOOKING:');
+      console.log('ADDRESS CAPTURE - completing booking:');
+      console.log('  address:', address);
       console.log('  attendeeName:', pending.attendeeName);
       console.log('  attendeeEmail:', pending.attendeeEmail);
-      console.log('  location:', location);
       console.log('  time:', requestedTime.toString());
 
       try {
@@ -102,17 +112,24 @@ router.post('/', async (req, res) => {
           durationMinutes: 60,
           attendeeEmail: pending.attendeeEmail,
           attendeeName: pending.attendeeName,
-          location: location,
-          description: `<p>In-person meeting with ${pending.attendeeName}</p><p>Location: ${location}</p><p>Topic: ${pending.topic}</p><p>Booked by Emily (AI Assistant)</p>`
+          location: address,
+          description: `<p>In-person meeting with ${pending.attendeeName}</p>
+                        <p>Location: ${address}</p>
+                        <p>Topic: ${pending.topic}</p>
+                        <p>Booked by Emily (AI Assistant)</p>`
         });
 
-        console.log('PENDING BOOKING RESULT:', JSON.stringify(meetingResult, null, 2));
+        // Clear state
+        conversation.awaiting = null;
+        conversation.pendingBooking = null;
 
-        // Clear pending booking
-        delete conversation.pendingBooking;
+        console.log('ADDRESS BOOKING RESULT:', JSON.stringify(meetingResult, null, 2));
 
         if (meetingResult.success) {
-          const confirmMessage = `That's booked for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)} at ${location}. A calendar invite has been sent to ${pending.attendeeEmail}.`;
+          const confirmMessage =
+            `That's booked for ${calendarService.formatDate(requestedTime)} at ` +
+            `${calendarService.formatTimeSlot(requestedTime)} at ${address}. ` +
+            `A calendar invite has been sent to ${pending.attendeeEmail}.`;
 
           conversation.messages.push({ role: 'user', content: message });
           conversation.messages.push({ role: 'assistant', content: confirmMessage });
@@ -124,31 +141,22 @@ router.post('/', async (req, res) => {
             school: school.shortName
           });
         }
-      } catch (bookingErr) {
-        console.error('Failed to complete pending booking:', bookingErr);
-        // Fall through to normal flow
-      }
-    }
 
-    // Check if we're waiting for address but user gave week/day/time - store it for later
-    if (conversation.waitingForAddress && message) {
-      const lowerMsg = message.toLowerCase();
-      // If it looks like an address (has numbers, street words, or postcode pattern)
-      const looksLikeAddress = /\d/.test(message) && (
-        /street|road|lane|avenue|drive|way|close|court|place|crescent/i.test(message) ||
-        /[A-Z]{1,2}\d{1,2}\s*\d[A-Z]{2}/i.test(message) // UK postcode
-      );
+        throw new Error(meetingResult.error);
 
-      if (looksLikeAddress) {
-        console.log('ADDRESS DETECTED while waiting:', message);
-        // Store the address
-        conversation.collectedAddress = message;
-        delete conversation.waitingForAddress;
-      } else if (/next week|week after|monday|tuesday|wednesday|thursday|friday|^\d{1,2}(am|pm|:\d{2})/i.test(lowerMsg)) {
-        // User gave week/day/time but we need address - store it
-        console.log('STORING TIMING INFO while waiting for address:', message);
-        if (!conversation.collectedTiming) conversation.collectedTiming = [];
-        conversation.collectedTiming.push(message);
+      } catch (err) {
+        console.error('ADDRESS BOOKING FAILED:', err);
+
+        // Clear state on failure too
+        conversation.awaiting = null;
+        conversation.pendingBooking = null;
+
+        return res.json({
+          success: true,
+          response: "I had trouble booking that. Could you double-check the address and try again?",
+          session_id: sessionId,
+          school: school.shortName
+        });
       }
     }
 
@@ -457,77 +465,28 @@ router.post('/', async (req, res) => {
             console.log('MEETING TYPE CHECK: isInPerson=', isInPerson, 'aiLocation=', functionArgs.location, 'storedSchool=', conversation.userDetails?.school, 'resolved=', resolvedLocation);
 
             if (isInPerson && !resolvedLocation) {
-              // No location at all - use a default and let Bob confirm
-              console.log('NO LOCATION - using default, Bob can confirm');
-              // Just proceed with "Location TBC" - better than blocking the booking
-              const fallbackLocation = 'Location to be confirmed with ' + attendeeName;
+              // Freeze booking state BEFORE asking for address
+              // This is the critical fix - next user message goes straight to address capture
+              console.log('NO LOCATION - freezing state and asking for address');
 
-              console.log('BOOKING WITH FALLBACK LOCATION:', fallbackLocation);
+              conversation.pendingBooking = {
+                requestedTime: requestedTime.toISOString(),
+                attendeeName,
+                attendeeEmail,
+                topic: functionArgs.topic || 'bSMART AI Demo'
+              };
+              conversation.awaiting = 'address';
 
-              meetingResult = await calendarService.createInPersonMeeting({
-                subject: `bSMART AI Meeting - ${attendeeName}`,
-                startTime: requestedTime,
-                durationMinutes: 60,
-                attendeeEmail: attendeeEmail,
-                attendeeName: attendeeName,
-                location: fallbackLocation,
-                description: `<p>In-person meeting with ${attendeeName}</p><p>Location: To be confirmed</p><p>Topic: ${functionArgs.topic || 'bSMART AI Demo'}</p><p>Booked by Emily (AI Assistant)</p><p><strong>Please confirm the meeting location with ${attendeeName}.</strong></p>`
+              // Store the user's message that triggered this
+              conversation.messages.push({ role: 'user', content: message });
+              conversation.messages.push({ role: 'assistant', content: "Thanks — could you share the full address for the in-person meeting?" });
+
+              return res.json({
+                success: true,
+                response: "Thanks — could you share the full address for the in-person meeting?",
+                session_id: sessionId,
+                school: school.shortName
               });
-
-              if (meetingResult.success) {
-                confirmMessage = `I've booked an in-person meeting for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}. Bob will confirm the exact location with you. A calendar invite has been sent to ${attendeeEmail}.`;
-
-                const scheduleResult = {
-                  ok: true,
-                  booked: true,
-                  meeting_type: 'in_person',
-                  busy_phrase: 'That works',
-                  meeting_time: requestedTime.toISOString(),
-                  formatted_time: `${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}`,
-                  location: fallbackLocation,
-                  message: confirmMessage,
-                  instructions: 'Confirm the booking. Mention Bob will confirm the exact location.'
-                };
-
-                console.log('MEETING RESULT:', JSON.stringify(meetingResult, null, 2));
-
-                const functionMessages = [
-                  ...apiMessages,
-                  assistantMessage,
-                  { role: 'function', name: 'schedule_meeting', content: JSON.stringify(scheduleResult) }
-                ];
-
-                const followUp = await getOpenAIClient().chat.completions.create({
-                  model: 'gpt-4o-mini',
-                  messages: functionMessages,
-                  temperature: 0.7,
-                  max_tokens: 500
-                });
-
-                response = followUp.choices[0].message.content;
-              } else {
-                // Booking failed - ask for location to try again
-                const scheduleResult = {
-                  ok: false,
-                  needs_location: true,
-                  message: "I couldn't complete the booking. Could you share the full address so I can try again?"
-                };
-
-              const functionMessages = [
-                ...apiMessages,
-                assistantMessage,
-                { role: 'function', name: 'schedule_meeting', content: JSON.stringify(scheduleResult) }
-              ];
-
-              const followUp = await getOpenAIClient().chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: functionMessages,
-                temperature: 0.7,
-                max_tokens: 500
-              });
-
-              response = followUp.choices[0].message.content;
-              }
             } else {
               // Check availability (silently - never reveal to user)
               const availability = await calendarService.checkAvailability(requestedTime);
@@ -905,10 +864,10 @@ STEP 3: ASK TEAMS OR IN-PERSON
 
 STEP 3.5: LOCATION (ONLY FOR IN-PERSON MEETINGS)
 - If they chose in-person, ask: "Shall Bob come to your school, or would you prefer to visit our office?"
-- If they say "school" or "my school" → use their school name as the location (e.g., "Greenfield School")
+- If they say "school" or "my school" → ask for the full address including postcode
 - If they say "office" → location = "bSMART AI office, London"
-- DO NOT ask for a full address - just use the school name, Bob can confirm details later
-- Proceed immediately to Step 4 after they choose school or office
+- For in-person meetings, you MUST collect the full address after date and time are agreed
+- The system will prompt for the address automatically if you don't provide one
 
 STEP 4: ASK WHAT WEEK
 - "What week works best for you?"
@@ -929,9 +888,9 @@ STEP 7: BOOK THE MEETING
   * attendee_email: their email
   * requested_time: FULL DATE like "Monday 10th February at 2pm" (not just "2pm")
   * meeting_type: "teams" or "in_person"
-  * location: For in-person, use the school name (e.g., "Greenfield School") or "bSMART AI office, London"
+  * location: For in-person, provide the full address if you have it
   * topic: what they want to discuss
-- Just use the school name for location - Bob can confirm the exact address later
+- If you don't have the full address for an in-person meeting, the system will ask for it automatically
 - NEVER call book_demo - that only sends an email without booking
 
 STEP 8: CONFIRM
