@@ -18,6 +18,14 @@
   let familyId = null;
   let familyContext = {};
 
+  // Store user's booking details explicitly (not relying on AI extraction)
+  let userDetails = {
+    name: null,
+    email: null,
+    school: null,
+    role: null
+  };
+
   // Booking flow state machine
   // Stages: null (not booking), 1 (details), 2 (products), 3 (meeting type), 4 (week), 5 (time), 6 (done)
   let bookingStage = null;
@@ -553,7 +561,8 @@
           session_id: sessionId,
           family_id: familyId,
           family_context: familyContext,
-          screen_context: screenContext
+          screen_context: screenContext,
+          user_details: userDetails // Pass stored user details for booking
         })
       });
 
@@ -828,6 +837,13 @@
       alert('Please enter at least your name and email');
       return;
     }
+
+    // CRITICAL: Store user details explicitly so we don't rely on AI extraction
+    userDetails.name = name;
+    userDetails.email = email;
+    userDetails.school = school || null;
+    userDetails.role = role || null;
+    console.log('STORED USER DETAILS:', userDetails);
 
     // Remove the form
     document.getElementById('emily-booking-form').remove();

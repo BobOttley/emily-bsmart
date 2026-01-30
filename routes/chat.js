@@ -39,7 +39,7 @@ const conversations = new Map();
  * Main chat endpoint for text conversations
  */
 router.post('/', async (req, res) => {
-  const { message, session_id, family_id, family_context, screen_context } = req.body;
+  const { message, session_id, family_id, family_context, screen_context, user_details } = req.body;
   const school = req.school;
 
   if (!message) {
@@ -62,6 +62,12 @@ router.post('/', async (req, res) => {
   // Store screen context in conversation
   if (screen_context) {
     conversation.screenContext = screen_context;
+  }
+
+  // Store user details if provided (from booking form)
+  if (user_details && user_details.email) {
+    conversation.userDetails = user_details;
+    console.log('STORED USER DETAILS IN SESSION:', user_details);
   }
 
   // Check if user wants to enter demo mode with More House
@@ -324,7 +330,23 @@ router.post('/', async (req, res) => {
         response = followUp.choices[0].message.content;
       } else if (functionName === 'schedule_meeting') {
         // Handle calendar/meeting booking
-        console.log(`Meeting request from chat: ${functionArgs.attendee_name} (${functionArgs.attendee_email}) - ${functionArgs.requested_time}`);
+        // CRITICAL: Use stored user details if available, don't rely on AI extraction
+        let attendeeName = functionArgs.attendee_name;
+        let attendeeEmail = functionArgs.attendee_email;
+
+        // Override with stored user details if AI gave wrong email
+        if (conversation.userDetails) {
+          if (conversation.userDetails.email && conversation.userDetails.email !== attendeeEmail) {
+            console.log(`EMAIL OVERRIDE: AI extracted "${attendeeEmail}" but user entered "${conversation.userDetails.email}"`);
+            attendeeEmail = conversation.userDetails.email;
+          }
+          if (conversation.userDetails.name && conversation.userDetails.name !== attendeeName) {
+            console.log(`NAME OVERRIDE: AI extracted "${attendeeName}" but user entered "${conversation.userDetails.name}"`);
+            attendeeName = conversation.userDetails.name;
+          }
+        }
+
+        console.log(`Meeting request from chat: ${attendeeName} (${attendeeEmail}) - ${functionArgs.requested_time}`);
 
         try {
           // Parse the requested time
@@ -389,26 +411,26 @@ router.post('/', async (req, res) => {
                 if (isInPerson) {
                   // Create in-person meeting
                   meetingResult = await calendarService.createInPersonMeeting({
-                    subject: `bSMART AI Meeting - ${functionArgs.attendee_name}`,
+                    subject: `bSMART AI Meeting - ${attendeeName}`,
                     startTime: requestedTime,
                     durationMinutes: 60, // Longer for in-person
-                    attendeeEmail: functionArgs.attendee_email,
-                    attendeeName: functionArgs.attendee_name,
+                    attendeeEmail: attendeeEmail,
+                    attendeeName: attendeeName,
                     location: functionArgs.location,
-                    description: `<p>In-person meeting with ${functionArgs.attendee_name}</p><p>School: ${functionArgs.school_name || 'Not specified'}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
+                    description: `<p>In-person meeting with ${attendeeName}</p><p>School: ${functionArgs.school_name || 'Not specified'}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
                   });
-                  confirmMessage = `I've booked an in-person meeting for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)} at ${functionArgs.location}. A calendar invite has been sent to ${functionArgs.attendee_email}.`;
+                  confirmMessage = `I've booked an in-person meeting for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)} at ${functionArgs.location}. A calendar invite has been sent to ${attendeeEmail}.`;
                 } else {
                   // Create Teams meeting
                   meetingResult = await calendarService.createTeamsMeeting({
-                    subject: `bSMART AI Demo - ${functionArgs.attendee_name}`,
+                    subject: `bSMART AI Demo - ${attendeeName}`,
                     startTime: requestedTime,
                     durationMinutes: 60,
-                    attendeeEmail: functionArgs.attendee_email,
-                    attendeeName: functionArgs.attendee_name,
-                    description: `<p>Demo call with ${functionArgs.attendee_name}</p><p>School: ${functionArgs.school_name || 'Not specified'}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Platform Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
+                    attendeeEmail: attendeeEmail,
+                    attendeeName: attendeeName,
+                    description: `<p>Demo call with ${attendeeName}</p><p>School: ${functionArgs.school_name || 'Not specified'}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Platform Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
                   });
-                  confirmMessage = `I've booked a Teams call for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}. A calendar invite has been sent to ${functionArgs.attendee_email}.`;
+                  confirmMessage = `I've booked a Teams call for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}. A calendar invite has been sent to ${attendeeEmail}.`;
                 }
 
                 if (meetingResult.success) {
@@ -447,8 +469,8 @@ router.post('/', async (req, res) => {
                 console.error('Meeting creation failed:', meetingResult.error);
 
                 const emailBody = buildDemoRequestEmail({
-                  name: functionArgs.attendee_name,
-                  email: functionArgs.attendee_email,
+                  name: attendeeName,
+                  email: attendeeEmail,
                   school: functionArgs.topic || 'Unknown',
                   role: 'Unknown',
                   interests: functionArgs.topic || 'Full demo',
@@ -457,9 +479,9 @@ router.post('/', async (req, res) => {
                 }, 'Chat');
 
                 await sendNotificationEmail(
-                  `Demo Request: ${functionArgs.attendee_name} - Requested ${functionArgs.requested_time}`,
+                  `Demo Request: ${attendeeName} - Requested ${functionArgs.requested_time}`,
                   emailBody,
-                  functionArgs.attendee_email
+                  attendeeEmail
                 );
 
                 const scheduleResult = {
@@ -529,8 +551,8 @@ router.post('/', async (req, res) => {
 
           // Fallback - send as demo request
           const emailBody = buildDemoRequestEmail({
-            name: functionArgs.attendee_name,
-            email: functionArgs.attendee_email,
+            name: attendeeName,
+            email: attendeeEmail,
             school: 'Unknown',
             role: 'Unknown',
             interests: functionArgs.topic || 'Full demo',
@@ -539,9 +561,9 @@ router.post('/', async (req, res) => {
           }, 'Chat');
 
           await sendNotificationEmail(
-            `Demo Request: ${functionArgs.attendee_name} - Requested ${functionArgs.requested_time}`,
+            `Demo Request: ${attendeeName} - Requested ${functionArgs.requested_time}`,
             emailBody,
-            functionArgs.attendee_email
+            attendeeEmail
           );
 
           const scheduleResult = {
