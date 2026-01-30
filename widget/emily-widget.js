@@ -579,15 +579,13 @@
     }
 
     // Booking flow - Emily is asking for time preference
-    // DON'T show buttons - let the user type their preferred date/time
-    // This avoids offering weekends and lets them choose what suits them
+    // DON'T show ANY buttons - let the user type their preferred date/time
     if (text.includes('when would') || text.includes('what time') || text.includes('what day') ||
+        text.includes('what date') || text.includes('suit you') || text.includes('video call') ||
         text.includes('when suits') || text.includes('when works') ||
         text.includes('specify a day') || text.includes('which day') || text.includes('specific day') ||
-        text.includes('works best')) {
-      // Don't show time buttons - let user type their preference
-      // This ensures they pick a date/time that works for them
-      return buttons;
+        text.includes('works best') || text.includes('teams call')) {
+      return buttons; // Empty - no buttons when asking about scheduling
     }
 
     // Asking for contact details - show form button
