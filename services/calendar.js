@@ -80,6 +80,8 @@ async function checkAvailability(startTime, durationMinutes = 30) {
 
     const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
 
+    console.log('CALENDAR CHECK: Checking availability for', startTime.toString(), 'to', endTime.toString());
+
     // Use schedules endpoint to check availability
     const response = await fetch('https://graph.microsoft.com/v1.0/me/calendar/getSchedule', {
       method: 'POST',
@@ -109,13 +111,23 @@ async function checkAvailability(startTime, durationMinutes = 30) {
     const data = await response.json();
     const schedule = data.value?.[0];
 
+    console.log('CALENDAR CHECK: API response schedule:', JSON.stringify(schedule, null, 2));
+
     if (!schedule) {
       // No schedule data - assume available
+      console.log('CALENDAR CHECK: No schedule data - assuming FREE');
       return { available: true, busySlots: [] };
     }
 
     // Check if the slot is free
-    const available = schedule.availabilityView?.[0] === '0' || !schedule.scheduleItems?.length;
+    // availabilityView: '0' = free, '1' = tentative, '2' = busy
+    const availabilityCode = schedule.availabilityView?.[0];
+    const hasScheduleItems = schedule.scheduleItems?.length > 0;
+
+    // FREE if: code is '0' (free) OR code is '1' (tentative) OR no schedule items
+    const available = availabilityCode === '0' || availabilityCode === '1' || !hasScheduleItems;
+
+    console.log('CALENDAR CHECK: availabilityCode=', availabilityCode, 'hasItems=', hasScheduleItems, 'RESULT=', available ? 'FREE' : 'BUSY');
 
     return {
       available,
