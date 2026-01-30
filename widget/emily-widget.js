@@ -187,7 +187,7 @@
 
         <!-- Welcome -->
         <div id="emily-welcome">
-          Hello! I'm Emily from bSMART AI. I help schools transform their admissions with AI. Ask me about our 7 SMART products, or book a demo!
+          Hello! I'm Emily. I can show you exactly how AI transforms school admissions - or we can book a call with Bob. What would you like?
         </div>
 
         <!-- Chat History -->
@@ -1270,18 +1270,17 @@
   // =========================================================================
 
   function getQuickRepliesHtml() {
-    // Default quick replies for bSMART sales
+    // Default quick replies - designed to guide people into the demo experience
     const defaultReplies = [
-      { label: 'See All Products', query: 'What are the 7 SMART products?' },
-      { label: 'Book a Demo', query: 'I\'d like to book a demo with Bob' },
-      { label: 'Contact Us', query: 'I have a question and would like someone to contact me' },
-      { label: 'How It Works', query: 'How does bSMART connect everything together?' }
+      { label: 'Show Me How It Works', query: 'Show me how Emily works for schools', highlight: true },
+      { label: 'Book a Call', query: "I'd like to book a demo with Bob" },
+      { label: 'What Is This?', query: 'What is bSMART AI?' }
     ];
 
     const replies = schoolConfig?.quickReplies || defaultReplies;
 
     return replies.map(r =>
-      `<button class="emily-quick" data-q="${escapeHtml(r.query)}">${escapeHtml(r.label)}</button>`
+      `<button class="emily-quick${r.highlight ? ' emily-quick--highlight' : ''}" data-q="${escapeHtml(r.query)}">${escapeHtml(r.label)}</button>`
     ).join('');
   }
 
