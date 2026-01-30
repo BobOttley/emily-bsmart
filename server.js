@@ -580,6 +580,9 @@ app.get('/widget/:schoolId/emily.js', (req, res) => {
   widgetCode = widgetCode.replace('__API_BASE_URL__', process.env.API_BASE_URL || `http://localhost:${PORT}`);
 
   res.type('application/javascript');
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   res.send(widgetCode);
 });
 
