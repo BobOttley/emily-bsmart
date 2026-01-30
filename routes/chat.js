@@ -64,12 +64,19 @@ router.post('/', async (req, res) => {
     conversation.screenContext = screen_context;
   }
 
-  try {
-    // Load knowledge base
-    const knowledgeBase = loadKnowledgeBase(school);
+  // Check if user wants to enter demo mode with More House
+  const lowerMessage = message.toLowerCase();
+  if (lowerMessage.includes('try') && (lowerMessage.includes('demo') || lowerMessage.includes('chat demo') || lowerMessage.includes('voice demo')) &&
+      (lowerMessage.includes('school') || lowerMessage.includes('example') || lowerMessage.includes('more house'))) {
+    conversation.demoMode = true;
+  }
 
-    // Build system prompt with screen awareness
-    const systemPrompt = buildChatSystemPrompt(school, conversation.familyContext, knowledgeBase, screen_context);
+  try {
+    // Load knowledge base (use More House demo KB if in demo mode)
+    const knowledgeBase = loadKnowledgeBase(school, conversation.demoMode);
+
+    // Build system prompt with screen awareness and demo mode
+    const systemPrompt = buildChatSystemPrompt(school, conversation.familyContext, knowledgeBase, screen_context, conversation.demoMode);
 
     // Add user message to history
     conversation.messages.push({
@@ -658,9 +665,11 @@ router.get('/history/:sessionId', (req, res) => {
 // HELPER FUNCTIONS
 // ============================================================================
 
-function loadKnowledgeBase(school) {
+function loadKnowledgeBase(school, demoMode = false) {
   try {
-    const kbPath = path.join(__dirname, '..', 'knowledge-bases', school.knowledgeBase);
+    // If demo mode, load More House demo knowledge base
+    const kbFile = demoMode ? 'more-house-demo.md' : school.knowledgeBase;
+    const kbPath = path.join(__dirname, '..', 'knowledge-bases', kbFile);
     return fs.readFileSync(kbPath, 'utf8');
   } catch (err) {
     console.error(`Failed to load knowledge base for ${school.id}:`, err);
@@ -668,7 +677,12 @@ function loadKnowledgeBase(school) {
   }
 }
 
-function buildChatSystemPrompt(school, familyContext, knowledgeBase, screenContext) {
+function buildChatSystemPrompt(school, familyContext, knowledgeBase, screenContext, demoMode = false) {
+  // Check if we're in demo mode (showing More House as an example)
+  if (demoMode) {
+    return buildDemoModePrompt(knowledgeBase);
+  }
+
   // bSMART-specific prompt
   let prompt = `You are Emily, the AI assistant for bSMART AI. You're here to answer questions about the apps, explain how they work, discuss security, outline the benefits, book demos, or contact the company on behalf of visitors by email. You ARE the product - a demonstration of what bSMART AI can do for schools.
 
@@ -829,6 +843,43 @@ SCREEN AWARENESS BEHAVIOURS:
   }
 
   return prompt;
+}
+
+// Demo mode prompt - Emily acts as if she's the assistant for More House School
+function buildDemoModePrompt(knowledgeBase) {
+  return `You are Emily, demonstrating how SMART Chat works for schools. You're now showing a LIVE DEMO using More House School as an example.
+
+DEMO MODE ACTIVE - You are now acting as the Emily assistant for More House School, an independent Catholic girls' school in Knightsbridge, London.
+
+IMPORTANT DEMO RULES:
+1. Answer questions about More House School using the knowledge base below
+2. Be warm, helpful, and knowledgeable - just as you would be for any school
+3. If asked about admissions, fees, curriculum, etc. - answer using the More House information
+4. You can offer to book visits, but explain this is a demo - real bookings would go to More House admissions
+5. After a few exchanges, remind them "This is a demo - imagine this is YOUR school's information!"
+6. Guide them back to booking a call with Bob to discuss implementing this for their school
+
+VOICE AND PERSONALITY:
+- British accent, warm and professional
+- Use British spelling: colour, centre, organise
+- Be enthusiastic about the school
+
+WHEN ASKED QUESTIONS:
+- Answer about More House using the knowledge base
+- Show how Emily can handle fees, admissions, events, curriculum questions
+- Demonstrate the natural conversation flow
+
+TO EXIT DEMO MODE:
+When they've seen enough, say something like: "That gives you an idea of how Emily works for schools. Shall we book a call with Bob to discuss setting this up for YOUR school?"
+
+MORE HOUSE SCHOOL KNOWLEDGE BASE:
+${knowledgeBase}
+
+GENERAL RULES:
+- Keep responses concise but helpful
+- Never make up information not in the knowledge base
+- NO asterisks, NO markdown formatting
+- Be conversational and natural`;
 }
 
 async function getProspectusSection(school, sectionId, familyContext) {
