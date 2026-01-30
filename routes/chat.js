@@ -14,6 +14,9 @@ const OpenAI = require('openai');
 // Import shared email utility
 const { sendNotificationEmail, buildDemoRequestEmail, buildContactEmail } = require('../utils/email');
 
+// Import calendar service for Teams meeting booking
+const calendarService = require('../services/calendar');
+
 // Initialize OpenAI client (deferred to allow server to start without API key)
 let openai = null;
 
@@ -135,6 +138,38 @@ router.post('/', async (req, res) => {
               }
             },
             required: ['section']
+          }
+        },
+        {
+          name: 'schedule_meeting',
+          description: 'Schedule a Teams call with Bob Ottley. Use this when someone wants to book a demo call or meeting. First ask what time suits them, then call this function. ALWAYS suggest a Teams call as the default. Only offer in-person if the user specifically asks.',
+          parameters: {
+            type: 'object',
+            properties: {
+              requested_time: {
+                type: 'string',
+                description: 'The time the user requested, e.g. "tomorrow at 2pm", "next Tuesday 10am", "3pm"'
+              },
+              attendee_name: {
+                type: 'string',
+                description: 'Name of the person booking the meeting'
+              },
+              attendee_email: {
+                type: 'string',
+                description: 'Email address of the person booking the meeting'
+              },
+              meeting_type: {
+                type: 'string',
+                description: 'Type of meeting: teams (default) or in_person',
+                enum: ['teams', 'in_person'],
+                default: 'teams'
+              },
+              topic: {
+                type: 'string',
+                description: 'What they want to discuss, e.g. "SMART Prospectus demo", "Full platform demo"'
+              }
+            },
+            required: ['requested_time', 'attendee_name', 'attendee_email']
           }
         }
       ],
@@ -272,6 +307,201 @@ router.post('/', async (req, res) => {
         });
 
         response = followUp.choices[0].message.content;
+      } else if (functionName === 'schedule_meeting') {
+        // Handle calendar/meeting booking
+        console.log(`Meeting request from chat: ${functionArgs.attendee_name} (${functionArgs.attendee_email}) - ${functionArgs.requested_time}`);
+
+        try {
+          // Parse the requested time
+          const requestedTime = calendarService.parseTimeRequest(functionArgs.requested_time);
+
+          if (!requestedTime) {
+            // Couldn't parse time - ask for clarification
+            const scheduleResult = {
+              ok: false,
+              needs_clarification: true,
+              message: "I couldn't quite work out the time. Could you be a bit more specific? For example, 'tomorrow at 2pm' or 'next Tuesday at 10am'?"
+            };
+
+            const functionMessages = [
+              ...apiMessages,
+              assistantMessage,
+              { role: 'function', name: 'schedule_meeting', content: JSON.stringify(scheduleResult) }
+            ];
+
+            const followUp = await getOpenAIClient().chat.completions.create({
+              model: 'gpt-4o-mini',
+              messages: functionMessages,
+              temperature: 0.7,
+              max_tokens: 500
+            });
+
+            response = followUp.choices[0].message.content;
+          } else {
+            // Check availability (silently - never reveal to user)
+            const availability = await calendarService.checkAvailability(requestedTime);
+
+            if (availability.available) {
+              // Slot is free - book the meeting
+              const meetingResult = await calendarService.createTeamsMeeting({
+                subject: `bSMART AI Demo - ${functionArgs.attendee_name}`,
+                startTime: requestedTime,
+                durationMinutes: 30,
+                attendeeEmail: functionArgs.attendee_email,
+                attendeeName: functionArgs.attendee_name,
+                description: `<p>Demo call with ${functionArgs.attendee_name}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Platform Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
+              });
+
+              if (meetingResult.success) {
+                // Use "busy Bob" language to make it seem like we got lucky
+                const busyPhrase = calendarService.getRandomPhrase('available');
+
+                const scheduleResult = {
+                  ok: true,
+                  booked: true,
+                  busy_phrase: busyPhrase,
+                  meeting_time: requestedTime.toISOString(),
+                  formatted_time: `${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}`,
+                  teams_link: meetingResult.teamsLink,
+                  message: `${busyPhrase}! I've booked a Teams call for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}. A calendar invite has been sent to ${functionArgs.attendee_email}.`
+                };
+
+                const functionMessages = [
+                  ...apiMessages,
+                  assistantMessage,
+                  { role: 'function', name: 'schedule_meeting', content: JSON.stringify(scheduleResult) }
+                ];
+
+                const followUp = await getOpenAIClient().chat.completions.create({
+                  model: 'gpt-4o-mini',
+                  messages: functionMessages,
+                  temperature: 0.7,
+                  max_tokens: 500
+                });
+
+                response = followUp.choices[0].message.content;
+              } else {
+                // Meeting creation failed - fallback to demo request email
+                console.error('Meeting creation failed:', meetingResult.error);
+
+                const emailBody = buildDemoRequestEmail({
+                  name: functionArgs.attendee_name,
+                  email: functionArgs.attendee_email,
+                  school: functionArgs.topic || 'Unknown',
+                  role: 'Unknown',
+                  interests: functionArgs.topic || 'Full demo',
+                  conversation: conversation.messages,
+                  preferred_time: functionArgs.requested_time
+                }, 'Chat');
+
+                await sendNotificationEmail(
+                  `Demo Request: ${functionArgs.attendee_name} - Requested ${functionArgs.requested_time}`,
+                  emailBody,
+                  functionArgs.attendee_email
+                );
+
+                const scheduleResult = {
+                  ok: true,
+                  booked: false,
+                  fallback: true,
+                  message: `I've sent your request to Bob. He'll get back to you shortly to confirm ${functionArgs.requested_time}.`
+                };
+
+                const functionMessages = [
+                  ...apiMessages,
+                  assistantMessage,
+                  { role: 'function', name: 'schedule_meeting', content: JSON.stringify(scheduleResult) }
+                ];
+
+                const followUp = await getOpenAIClient().chat.completions.create({
+                  model: 'gpt-4o-mini',
+                  messages: functionMessages,
+                  temperature: 0.7,
+                  max_tokens: 500
+                });
+
+                response = followUp.choices[0].message.content;
+              }
+            } else {
+              // Slot is busy - suggest alternatives with "busy Bob" language
+              const alternatives = await calendarService.suggestAlternatives(requestedTime);
+              const busyPhrase = calendarService.getRandomPhrase('busy');
+              const altPhrase = calendarService.getRandomPhrase('alternative');
+
+              let alternativeText = '';
+              if (alternatives.length > 0) {
+                alternativeText = alternatives.map(a =>
+                  `${a.formatted} on ${a.day}`
+                ).join(', or ');
+              }
+
+              const scheduleResult = {
+                ok: true,
+                booked: false,
+                busy: true,
+                busy_phrase: busyPhrase,
+                alternatives: alternatives,
+                message: `${busyPhrase}. ${altPhrase} ${alternativeText}?`
+              };
+
+              const functionMessages = [
+                ...apiMessages,
+                assistantMessage,
+                { role: 'function', name: 'schedule_meeting', content: JSON.stringify(scheduleResult) }
+              ];
+
+              const followUp = await getOpenAIClient().chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: functionMessages,
+                temperature: 0.7,
+                max_tokens: 500
+              });
+
+              response = followUp.choices[0].message.content;
+            }
+          }
+        } catch (calendarErr) {
+          console.error('Calendar error:', calendarErr);
+
+          // Fallback - send as demo request
+          const emailBody = buildDemoRequestEmail({
+            name: functionArgs.attendee_name,
+            email: functionArgs.attendee_email,
+            school: 'Unknown',
+            role: 'Unknown',
+            interests: functionArgs.topic || 'Full demo',
+            conversation: conversation.messages,
+            preferred_time: functionArgs.requested_time
+          }, 'Chat');
+
+          await sendNotificationEmail(
+            `Demo Request: ${functionArgs.attendee_name} - Requested ${functionArgs.requested_time}`,
+            emailBody,
+            functionArgs.attendee_email
+          );
+
+          const scheduleResult = {
+            ok: true,
+            booked: false,
+            fallback: true,
+            message: `I've sent your meeting request to Bob. He'll confirm the time with you directly.`
+          };
+
+          const functionMessages = [
+            ...apiMessages,
+            assistantMessage,
+            { role: 'function', name: 'schedule_meeting', content: JSON.stringify(scheduleResult) }
+          ];
+
+          const followUp = await getOpenAIClient().chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: functionMessages,
+            temperature: 0.7,
+            max_tokens: 500
+          });
+
+          response = followUp.choices[0].message.content;
+        }
       }
     }
 
@@ -435,6 +665,40 @@ DEMO BOOKING / CONTACT RULES (CRITICAL):
 - Required for demo: name, email, school, role, interests (but interests can be inferred from conversation)
 - Required for contact: name, email, question (school is optional)
 - Once you have what you need, IMMEDIATELY call the function. No more questions.
+
+MEETING BOOKING (CRITICAL - READ CAREFULLY):
+You can book Teams meetings directly in Bob's calendar. When someone wants a demo:
+
+1. SUGGEST TEAMS FIRST - Always suggest a Teams video call as the default option
+   - Only offer in-person if the user specifically asks for it
+   - Example: "Shall we set up a Teams call? What time works for you?"
+
+2. ASK FOR TIME FIRST - Before booking, ask what time suits them
+   - Example: "When would suit you for a quick Teams call?"
+   - Let THEM suggest the time, don't offer slots
+
+3. NEVER REVEAL CALENDAR AVAILABILITY - This is CRITICAL
+   - NEVER say "Bob's calendar is free" or "lots of availability"
+   - NEVER list available slots proactively
+   - If a slot is free, say things like "Bob can squeeze that in" or "That happens to be free"
+   - Make Bob look busy even if the calendar is empty
+
+4. COLLECT DETAILS FOR BOOKING:
+   - Name (you may already have this)
+   - Email (required for calendar invite)
+   - Preferred time (ask them first)
+   - Topic (optional - infer from conversation)
+
+5. BOOKING FLOW:
+   - Ask what time suits them
+   - Once they give a time, call schedule_meeting
+   - If the slot is busy, you'll get alternatives to suggest
+   - Confirm when booked: "Lovely, that's booked! Check your inbox for the Teams invite."
+
+6. HANDLING BUSY SLOTS:
+   - If their preferred time is taken, suggest alternatives naturally
+   - Use phrases like "That one's taken, how about 2:30pm instead?"
+   - Never apologise excessively or explain why it's busy
 
 SALES APPROACH:
 - Be helpful first, sales second

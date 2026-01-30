@@ -219,6 +219,33 @@ app.post('/api/:schoolId/realtime/session', async (req, res) => {
               },
               required: ['name', 'email', 'school', 'role', 'interests']
             }
+          },
+          {
+            type: 'function',
+            name: 'schedule_meeting',
+            description: 'Schedule a Teams call with Bob Ottley. Use this when someone wants to book a demo call. First ask what time suits them, then call this function. ALWAYS suggest Teams as the default.',
+            parameters: {
+              type: 'object',
+              properties: {
+                requested_time: {
+                  type: 'string',
+                  description: 'The time the user requested, e.g. "tomorrow at 2pm", "next Tuesday 10am"'
+                },
+                attendee_name: {
+                  type: 'string',
+                  description: 'Name of the person booking'
+                },
+                attendee_email: {
+                  type: 'string',
+                  description: 'Email address for the calendar invite'
+                },
+                topic: {
+                  type: 'string',
+                  description: 'What they want to discuss'
+                }
+              },
+              required: ['requested_time', 'attendee_name', 'attendee_email']
+            }
           }
         ]
       })
@@ -395,6 +422,130 @@ app.post('/api/:schoolId/realtime/tool/book_demo', async (req, res) => {
   });
 });
 
+// Schedule meeting tool endpoint - books Teams meetings directly
+const calendarService = require('./services/calendar');
+
+app.post('/api/:schoolId/realtime/tool/schedule_meeting', async (req, res) => {
+  const { requested_time, attendee_name, attendee_email, topic } = req.body;
+
+  if (!requested_time || !attendee_name || !attendee_email) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Required: requested_time, attendee_name, attendee_email'
+    });
+  }
+
+  console.log(`Meeting request from ${attendee_name} (${attendee_email}) for ${requested_time}`);
+
+  try {
+    // Parse the requested time
+    const requestedTime = calendarService.parseTimeRequest(requested_time);
+
+    if (!requestedTime) {
+      return res.json({
+        ok: true,
+        booked: false,
+        needs_clarification: true,
+        message: "I couldn't quite work out the time. Could you be more specific? For example, tomorrow at 2pm."
+      });
+    }
+
+    // Check availability silently
+    const availability = await calendarService.checkAvailability(requestedTime);
+
+    if (availability.available) {
+      // Book the meeting
+      const meetingResult = await calendarService.createTeamsMeeting({
+        subject: `bSMART AI Demo - ${attendee_name}`,
+        startTime: requestedTime,
+        durationMinutes: 30,
+        attendeeEmail: attendee_email,
+        attendeeName: attendee_name,
+        description: `<p>Demo call with ${attendee_name}</p><p>Topic: ${topic || 'bSMART AI Platform'}</p><p>Booked by Emily (Voice Assistant)</p>`
+      });
+
+      if (meetingResult.success) {
+        const busyPhrase = calendarService.getRandomPhrase('available');
+        return res.json({
+          ok: true,
+          booked: true,
+          busy_phrase: busyPhrase,
+          formatted_time: `${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}`,
+          teams_link: meetingResult.teamsLink,
+          message: `${busyPhrase}! I've booked a Teams call for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}. A calendar invite has been sent to ${attendee_email}.`
+        });
+      } else {
+        // Fallback to demo request
+        const emailBody = buildDemoRequestEmail({
+          name: attendee_name,
+          email: attendee_email,
+          school: 'Unknown',
+          role: 'Unknown',
+          interests: topic || 'Full demo',
+          preferred_time: requested_time
+        }, 'Voice');
+
+        await sendNotificationEmail(
+          `Demo Request: ${attendee_name} - Requested ${requested_time}`,
+          emailBody,
+          attendee_email
+        );
+
+        return res.json({
+          ok: true,
+          booked: false,
+          fallback: true,
+          message: `I've sent your meeting request to Bob. He'll confirm the time with you directly at ${attendee_email}.`
+        });
+      }
+    } else {
+      // Slot is busy - suggest alternatives
+      const alternatives = await calendarService.suggestAlternatives(requestedTime);
+      const busyPhrase = calendarService.getRandomPhrase('busy');
+
+      let alternativeText = '';
+      if (alternatives.length > 0) {
+        alternativeText = alternatives.map(a => `${a.formatted} on ${a.day}`).join(', or ');
+      }
+
+      return res.json({
+        ok: true,
+        booked: false,
+        busy: true,
+        busy_phrase: busyPhrase,
+        alternatives: alternatives,
+        message: `${busyPhrase}. How about ${alternativeText}?`
+      });
+    }
+
+  } catch (err) {
+    console.error('Schedule meeting error:', err);
+
+    // Fallback to demo request email
+    const emailBody = buildDemoRequestEmail({
+      name: attendee_name,
+      email: attendee_email,
+      school: 'Unknown',
+      role: 'Unknown',
+      interests: topic || 'Full demo',
+      preferred_time: requested_time
+    }, 'Voice');
+
+    await sendNotificationEmail(
+      `Demo Request: ${attendee_name} - Requested ${requested_time}`,
+      emailBody,
+      attendee_email
+    );
+
+    res.json({
+      ok: true,
+      booked: false,
+      fallback: true,
+      message: `I've sent your request to Bob. He'll get back to you to confirm the time.`
+    });
+  }
+});
+
 // ============================================================================
 // WIDGET SERVING
 // ============================================================================
@@ -536,6 +687,15 @@ DEMO BOOKING RULES (CRITICAL):
 - Read their messages carefully - extract any info they've already given
 - Required: name, email, school, role, interests (but interests can be inferred from conversation)
 - Once you have what you need, IMMEDIATELY call the book_demo function. No more questions.
+
+MEETING SCHEDULING (CRITICAL):
+You can book Teams meetings directly in Bob's calendar!
+- SUGGEST TEAMS FIRST - Always offer a Teams video call as the default
+- ASK FOR TIME FIRST - Let them suggest when suits them, don't offer slots
+- NEVER REVEAL AVAILABILITY - Never say "Bob's free" or "lots of availability"
+- If a slot is free, say "Bob can squeeze that in" or "That happens to be free"
+- Make Bob look busy even if the calendar is empty
+- Once they suggest a time, call schedule_meeting with their name, email, and requested time
 
 GENERAL RULES:
 - Never make up information
