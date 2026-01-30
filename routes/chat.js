@@ -422,9 +422,10 @@ router.post('/', async (req, res) => {
                     busy_phrase: busyPhrase,
                     meeting_time: requestedTime.toISOString(),
                     formatted_time: `${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}`,
-                    teams_link: meetingResult.teamsLink || null,
+                    // DO NOT include teams_link - it should only be in the calendar invite email
                     location: functionArgs.location || null,
-                    message: `${busyPhrase}! ${confirmMessage}`
+                    message: `${busyPhrase}! ${confirmMessage}`,
+                    instructions: 'DO NOT show any meeting links or URLs in your response. Just confirm the date, time, and that a calendar invite has been sent.'
                   };
 
                 const functionMessages = [
@@ -745,18 +746,26 @@ STEP 3: ASK TEAMS OR IN-PERSON
 
 STEP 4: ASK WHAT WEEK
 - "What week works best for you?"
-- Let THEM choose - never suggest specific dates
+- Let THEM choose the week
 
-STEP 5: ASK WHAT TIME
-- "And what time of day suits you?"
+STEP 5: ASK WHICH DAY
+- "Which day that week suits you best - Monday, Tuesday, Wednesday, Thursday or Friday?"
+- Let THEM pick the specific day
+
+STEP 6: ASK WHAT TIME
+- "And what time suits you?"
 - Let THEM specify the time
 
-STEP 6: BOOK THE MEETING
-- Call schedule_meeting with: name, email, time, meeting_type, location (if in-person), topic
+STEP 7: BOOK THE MEETING
+- Call schedule_meeting with the FULL DATE including day and week they specified
+- Include: name, email, requested_time (must be specific like "Monday 10th February at 2pm"), meeting_type, topic
+- The requested_time MUST include the actual date they chose, not just the time
 - NEVER call book_demo - that only sends an email without booking
 
-STEP 7: CONFIRM
-- State the FULL DATE AND TIME: "That's booked for Wednesday, 5 February at 10:00. Calendar invite sent!"
+STEP 8: CONFIRM
+- State the FULL DATE AND TIME: "That's booked for Monday, 10 February at 14:00. Calendar invite sent!"
+- DO NOT show the Teams meeting link in the chat - it's in the calendar invite
+- Keep confirmation SHORT - just date, time, and "calendar invite sent"
 
 IMPORTANT RULES:
 - NEVER reveal calendar availability - don't say "Bob's free" or list available slots

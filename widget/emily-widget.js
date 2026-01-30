@@ -516,9 +516,13 @@
       bookingStage = 4;
       console.log('BOOKING: Location provided - Stage 4 (Week)');
     } else if (bookingStage === 4) {
-      // User selected week - move to time
+      // User selected week - move to DAY selection
+      bookingStage = 4.5;
+      console.log('BOOKING: Week selected - Stage 4.5 (Day)');
+    } else if (bookingStage === 4.5) {
+      // User selected day - move to time
       bookingStage = 5;
-      console.log('BOOKING: Week selected - Stage 5 (Time)');
+      console.log('BOOKING: Day selected - Stage 5 (Time)');
     } else if (bookingStage === 5) {
       // User selected time - booking will be made, stage will reset when confirmed
       console.log('BOOKING: Time selected - Waiting for confirmation');
@@ -647,7 +651,10 @@
                              (text.includes('products') && text.includes('interested'));
     const isAskingMeetingType = text.includes('teams') && (text.includes('in person') || text.includes('in-person') || text.includes('prefer'));
     const isAskingLocation = text.includes('where') && (text.includes('meet') || text.includes('location'));
-    const isAskingWeek = text.includes('week') || text.includes('what date') || text.includes('when would');
+    const isAskingWeek = text.includes('week') && !text.includes('day of');
+    const isAskingDay = text.includes('which day') || text.includes('what day') ||
+                        (text.includes('day') && text.includes('suit')) ||
+                        text.includes('monday') || text.includes('tuesday');
     const isAskingTime = text.includes('time') && (text.includes('what') || text.includes('suit') || text.includes('prefer'));
 
     // Sync stage based on Emily's question
@@ -666,6 +673,9 @@
     } else if (isAskingWeek && bookingStage !== null) {
       bookingStage = 4;
       console.log('SYNC: Emily asking week - Stage 4');
+    } else if (isAskingDay && bookingStage !== null) {
+      bookingStage = 4.5;
+      console.log('SYNC: Emily asking day - Stage 4.5');
     } else if (isAskingTime && bookingStage !== null) {
       bookingStage = 5;
       console.log('SYNC: Emily asking time - Stage 5');
@@ -711,6 +721,18 @@
       // Stage 4: Week selection
       const weekButtons = getWeekButtons();
       weekButtons.forEach(btn => buttons.push(btn));
+      return buttons;
+    }
+
+    if (bookingStage === 4.5) {
+      // Stage 4.5: Day selection (Mon-Fri of selected week)
+      buttons.push(
+        { label: 'Monday', query: 'Monday' },
+        { label: 'Tuesday', query: 'Tuesday' },
+        { label: 'Wednesday', query: 'Wednesday' },
+        { label: 'Thursday', query: 'Thursday' },
+        { label: 'Friday', query: 'Friday' }
+      );
       return buttons;
     }
 

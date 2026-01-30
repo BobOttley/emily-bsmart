@@ -351,11 +351,13 @@ function parseTimeRequest(timeRequest) {
   const now = new Date();
   const text = timeRequest.toLowerCase().trim();
 
+  console.log('CALENDAR: Parsing time request:', text);
+
   // Extract time (look for patterns like 2pm, 14:00, 2:30pm)
   let hours = null;
   let minutes = 0;
 
-  // Match "2pm", "2:30pm", "14:00"
+  // Match "2pm", "2:30pm", "14:00", "1:30 pm"
   const timeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
   if (timeMatch) {
     hours = parseInt(timeMatch[1]);
@@ -368,22 +370,69 @@ function parseTimeRequest(timeRequest) {
 
   // Determine the day
   let targetDate = new Date(now);
+  let dateFound = false;
 
-  if (text.includes('tomorrow')) {
-    targetDate.setDate(targetDate.getDate() + 1);
-  } else if (text.includes('next week')) {
-    targetDate.setDate(targetDate.getDate() + 7);
-  } else {
-    // Check for day names
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    for (let i = 0; i < days.length; i++) {
-      if (text.includes(days[i])) {
-        const currentDay = now.getDay();
-        let daysUntil = i - currentDay;
-        if (daysUntil <= 0) daysUntil += 7; // Next occurrence
-        if (text.includes('next')) daysUntil += 7; // "next Tuesday"
-        targetDate.setDate(targetDate.getDate() + daysUntil);
+  // First, try to parse actual dates like "9th February", "February 10", "10/02", "10 Feb"
+  const months = ['january', 'february', 'march', 'april', 'may', 'june',
+                  'july', 'august', 'september', 'october', 'november', 'december'];
+  const monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+  // Match "9th February", "9 February", "February 9th", "February 9"
+  const datePatterns = [
+    /(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]+)/i,  // 9th February, 9 of February
+    /([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?/i,            // February 9th, February 9
+  ];
+
+  for (const pattern of datePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      let day, monthStr;
+      if (/^\d/.test(match[1])) {
+        day = parseInt(match[1]);
+        monthStr = match[2].toLowerCase();
+      } else {
+        monthStr = match[1].toLowerCase();
+        day = parseInt(match[2]);
+      }
+
+      let monthIndex = months.findIndex(m => m.startsWith(monthStr));
+      if (monthIndex === -1) monthIndex = monthsShort.findIndex(m => monthStr.startsWith(m));
+
+      if (monthIndex !== -1 && day >= 1 && day <= 31) {
+        targetDate = new Date(now.getFullYear(), monthIndex, day);
+        // If the date is in the past, assume next year
+        if (targetDate < now) {
+          targetDate = new Date(now.getFullYear() + 1, monthIndex, day);
+        }
+        dateFound = true;
+        console.log('CALENDAR: Parsed date:', targetDate.toDateString());
         break;
+      }
+    }
+  }
+
+  // If no date found, try other patterns
+  if (!dateFound) {
+    if (text.includes('tomorrow')) {
+      targetDate.setDate(targetDate.getDate() + 1);
+      dateFound = true;
+    } else if (text.includes('next week')) {
+      targetDate.setDate(targetDate.getDate() + 7);
+      dateFound = true;
+    } else {
+      // Check for day names
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      for (let i = 0; i < days.length; i++) {
+        if (text.includes(days[i])) {
+          const currentDay = now.getDay();
+          let daysUntil = i - currentDay;
+          if (daysUntil <= 0) daysUntil += 7; // Next occurrence
+          if (text.includes('next')) daysUntil += 7; // "next Tuesday"
+          targetDate.setDate(targetDate.getDate() + daysUntil);
+          dateFound = true;
+          console.log('CALENDAR: Parsed day name to:', targetDate.toDateString());
+          break;
+        }
       }
     }
   }
@@ -396,11 +445,13 @@ function parseTimeRequest(timeRequest) {
     targetDate.setHours(10, 0, 0, 0);
   }
 
-  // If the time has already passed today, move to tomorrow
-  if (targetDate <= now) {
+  // If no date found and time has passed today, move to tomorrow
+  if (!dateFound && targetDate <= now) {
     targetDate.setDate(targetDate.getDate() + 1);
+    console.log('CALENDAR: No date found, defaulting to tomorrow');
   }
 
+  console.log('CALENDAR: Final parsed date/time:', targetDate.toString());
   return targetDate;
 }
 
