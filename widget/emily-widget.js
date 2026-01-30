@@ -635,36 +635,89 @@
   }
 
   // ==========================================================================
-  // BOOKING FLOW STATE MACHINE - VERSION 3.0
+  // SMART BUTTONS - VERSION 4.0 (Demo Flow + Booking Flow)
   // ==========================================================================
-  // Stages: null (not booking), 1 (details), 2 (products), 3 (meeting type),
-  //         3.5 (location for in-person), 4 (week), 5 (time), 6 (done)
+  // Now detects DEMO FLOW stages as well as booking stages
 
   function getSmartButtons(responseText) {
     const text = responseText.toLowerCase();
     const buttons = [];
 
-    console.log('EMILY BUTTONS v3.0 - Stage:', bookingStage, '- Text:', text.substring(0, 60));
+    console.log('EMILY BUTTONS v4.0 - BookingStage:', bookingStage, '- Text:', text.substring(0, 80));
 
-    // Check if booking is confirmed - reset and exit
-    if (text.includes('booked') && (text.includes('calendar') || text.includes('invite'))) {
-      bookingStage = null; // Reset - booking complete
-      console.log('BOOKING COMPLETE - Reset to null');
-      return buttons; // No buttons needed
-    }
+    // =========================================================================
+    // DEMO FLOW DETECTION (prioritised over booking)
+    // =========================================================================
 
-    // NO DETECTION - Pure stage-based. Stage advances when user responds.
-    // Buttons shown are based ONLY on the current stage.
-
-    // Only thing we detect: booking complete (to reset)
-    if (text.includes('booked') && (text.includes('calendar') || text.includes('invite') || text.includes('confirmed'))) {
-      bookingStage = null;
-      console.log('BOOKING COMPLETE - Reset');
+    // Demo fork: "explain or show you" / "which would you prefer"
+    if ((text.includes('explain') && text.includes('show')) ||
+        (text.includes('two ways') && text.includes('prefer'))) {
+      console.log('DEMO FORK DETECTED');
+      buttons.push(
+        { label: 'Show me how it works', query: 'Show me how it works' },
+        { label: 'Explain first', query: 'Explain the products first' }
+      );
       return buttons;
     }
 
+    // School type question: "day, boarding, or both"
+    if (text.includes('day') && text.includes('boarding') && (text.includes('both') || text.includes('type of school'))) {
+      console.log('SCHOOL TYPE QUESTION DETECTED');
+      buttons.push(
+        { label: 'Day school', query: 'Day school' },
+        { label: 'Boarding school', query: 'Boarding school' },
+        { label: 'Both', query: 'Both day and boarding' }
+      );
+      return buttons;
+    }
+
+    // Parent role-play offer: "try Emily as a parent" / "would you like to ask"
+    if ((text.includes('try') && text.includes('parent')) ||
+        (text.includes('ask') && text.includes('parent would')) ||
+        (text.includes('what would you like to ask') && text.includes('parent'))) {
+      console.log('PARENT ROLE-PLAY OFFER DETECTED');
+      buttons.push(
+        { label: 'Try as a parent', query: "Yes, I'll ask as a parent would" },
+        { label: 'Book a call instead', query: "I'd like to book a call with Bob" }
+      );
+      return buttons;
+    }
+
+    // After mirror moment or demo explanation - offer next steps
+    if (text.includes('hardest part to fake') || text.includes('not a scripted demo') ||
+        text.includes('same emily that sits on school websites')) {
+      console.log('MIRROR MOMENT DETECTED');
+      buttons.push(
+        { label: 'Try as a parent', query: "Let me try asking as a parent" },
+        { label: 'See the CRM', query: 'Show me how this connects to the CRM' },
+        { label: 'Book a call', query: "I'd like to book a call with Bob" }
+      );
+      return buttons;
+    }
+
+    // After parent role-play break: "logged in the CRM" / "exactly how Emily would respond"
+    if (text.includes('logged in the crm') || text.includes('exactly how emily would respond')) {
+      console.log('ROLE-PLAY BREAK DETECTED');
+      buttons.push(
+        { label: 'Continue exploring', query: 'Tell me more about the other products' },
+        { label: 'Book a call with Bob', query: "Let's book a call to discuss my school" }
+      );
+      return buttons;
+    }
+
+    // =========================================================================
+    // BOOKING FLOW (existing logic)
+    // =========================================================================
+
+    // Check if booking is confirmed - reset and exit
+    if (text.includes('booked') && (text.includes('calendar') || text.includes('invite') || text.includes('confirmed'))) {
+      bookingStage = null;
+      console.log('BOOKING COMPLETE - Reset');
+      return buttons; // No buttons needed
+    }
+
     // Start booking flow if Emily asks for details and we're not already in flow
-    if (bookingStage === null && (text.includes('name') && text.includes('email'))) {
+    if (bookingStage === null && (text.includes('name') && text.includes('email') && text.includes('school'))) {
       bookingStage = 1;
       console.log('BOOKING STARTED - Stage 1');
     }
@@ -681,9 +734,7 @@
         { label: 'SMART CRM', query: 'SMART CRM' },
         { label: 'SMART Chat', query: 'SMART Chat' },
         { label: 'SMART Voice', query: 'SMART Voice' },
-        { label: 'SMART Booking', query: 'SMART Booking' },
-        { label: 'SMART Email', query: 'SMART Email' },
-        { label: 'Full Platform', query: 'I want to see the full platform - all products' }
+        { label: 'Full Platform', query: 'I want to see the full platform' }
       );
       return buttons;
     }
@@ -697,7 +748,6 @@
     }
 
     if (bookingStage === 3.5) {
-      // Stage 3.5: Location (for in-person meetings)
       buttons.push(
         { label: 'At my school', query: 'Can you come to my school?' },
         { label: 'At your office', query: 'I can visit your office' }
@@ -706,14 +756,12 @@
     }
 
     if (bookingStage === 4) {
-      // Stage 4: Week selection
       const weekButtons = getWeekButtons();
       weekButtons.forEach(btn => buttons.push(btn));
       return buttons;
     }
 
     if (bookingStage === 4.5) {
-      // Stage 4.5: Day selection (Mon-Fri of selected week)
       buttons.push(
         { label: 'Monday', query: 'Monday' },
         { label: 'Tuesday', query: 'Tuesday' },
@@ -725,19 +773,18 @@
     }
 
     if (bookingStage === 5) {
-      // Stage 5: Time selection
       buttons.push({ label: 'Pick a Time', type: 'time-picker' });
       return buttons;
     }
 
     if (bookingStage === 6) {
-      // Stage 6: Pending - booking in progress, no buttons needed
-      console.log('BOOKING: Stage 6 - Waiting for booking confirmation, no buttons');
-      return buttons; // Empty - no buttons while booking is processing
+      console.log('BOOKING: Stage 6 - Waiting for confirmation');
+      return buttons;
     }
 
-    // NOT IN BOOKING FLOW - use simple detection for general conversation
-    // This handles non-booking scenarios
+    // =========================================================================
+    // GENERAL CONVERSATION (not in demo or booking flow)
+    // =========================================================================
 
     // Pricing questions
     if (text.includes('pricing') || text.includes('cost') || text.includes('price')) {
@@ -748,7 +795,7 @@
       return buttons;
     }
 
-    // Product info (not booking)
+    // Product info
     if (text.includes('7 smart products') || text.includes('seven smart')) {
       buttons.push(
         { label: 'SMART Prospectus', query: 'Tell me about SMART Prospectus' },
@@ -759,7 +806,7 @@
       return buttons;
     }
 
-    // Alternative time offered (during booking)
+    // Alternative time offered
     if (text.includes('how about') && (text.includes('am') || text.includes('pm') || text.includes(':'))) {
       buttons.push(
         { label: 'That works', query: 'Yes, that works for me' },
@@ -768,7 +815,7 @@
       return buttons;
     }
 
-    // General fallback - only if not in booking flow and it's a substantial response
+    // Fallback - only if substantial response and not asking for info
     if (bookingStage === null && buttons.length === 0 && text.length > 50) {
       const isAskingForInfo = text.includes('could you') || text.includes('please share') ||
                               text.includes('please specify') || text.includes('your name') ||
