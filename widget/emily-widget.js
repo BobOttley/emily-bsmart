@@ -347,14 +347,29 @@
   function showContextualBubble() {
     let message = sectionMessages['default'];
 
+    // Try to get current section from page if we don't have it
+    if (!currentViewingSection && typeof window.emilyGetContext === 'function') {
+      const context = window.emilyGetContext();
+      if (context && context.currentSection) {
+        currentViewingSection = {
+          sectionId: context.currentSection,
+          label: context.currentLabel,
+          description: context.currentDescription
+        };
+      }
+    }
+
     if (currentViewingSection) {
       const sectionId = currentViewingSection.sectionId || '';
+      console.log('Emily: Showing contextual bubble for section:', sectionId);
       // Check for exact match first, then partial matches
       if (sectionMessages[sectionId]) {
         message = sectionMessages[sectionId];
       } else if (sectionId.startsWith('product-')) {
         message = sectionMessages['products'];
       }
+    } else {
+      console.log('Emily: No section detected, showing default message');
     }
 
     showBubble(message);
