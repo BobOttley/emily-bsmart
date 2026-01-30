@@ -424,15 +424,15 @@ router.post('/', async (req, res) => {
               }
             } else {
               // Slot is busy - suggest alternatives with "busy Bob" language
+              // IMPORTANT: Always include the FULL DATE in alternatives so Emily doesn't lose context
               const alternatives = await calendarService.suggestAlternatives(requestedTime);
               const busyPhrase = calendarService.getRandomPhrase('busy');
               const altPhrase = calendarService.getRandomPhrase('alternative');
 
               let alternativeText = '';
               if (alternatives.length > 0) {
-                alternativeText = alternatives.map(a =>
-                  `${a.formatted} on ${a.day}`
-                ).join(', or ');
+                // Use fullDateTime which includes the day (e.g., "14:30 on Monday, 3 February")
+                alternativeText = alternatives.map(a => a.fullDateTime).join(', or ');
               }
 
               const scheduleResult = {
@@ -441,6 +441,7 @@ router.post('/', async (req, res) => {
                 busy: true,
                 busy_phrase: busyPhrase,
                 alternatives: alternatives,
+                requested_day: calendarService.formatDate(requestedTime), // Include original day for context
                 message: `${busyPhrase}. ${altPhrase} ${alternativeText}?`
               };
 

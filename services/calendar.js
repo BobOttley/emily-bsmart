@@ -407,12 +407,13 @@ function parseTimeRequest(timeRequest) {
 /**
  * Suggest alternative times when requested slot is busy
  * Returns 2-3 alternatives, phrased to make Bob look busy
+ * IMPORTANT: Always includes the full date so Emily doesn't lose context
  *
  * @param {Date} requestedTime - The time that was requested
  * @returns {Array} Alternative time suggestions
  */
 async function suggestAlternatives(requestedTime) {
-  // Find available slots on the same day and next day
+  // Find available slots on the SAME DAY as requested (not today!)
   const sameDay = await findAvailableSlots(requestedTime);
   const nextDay = new Date(requestedTime);
   nextDay.setDate(nextDay.getDate() + 1);
@@ -420,29 +421,31 @@ async function suggestAlternatives(requestedTime) {
 
   const alternatives = [];
 
-  // Try to find slots near the requested time
+  // Try to find slots near the requested time ON THE SAME DAY
   const requestedHour = requestedTime.getHours();
 
-  // Look for slots within 2 hours of requested time
+  // Look for slots within 2 hours of requested time on the same day
   for (const slot of sameDay) {
     const slotHour = slot.start.getHours();
     if (Math.abs(slotHour - requestedHour) <= 2 && alternatives.length < 2) {
       alternatives.push({
         time: slot.start,
         formatted: slot.formatted,
-        day: 'today'
+        day: formatDate(requestedTime), // ALWAYS include the full date
+        fullDateTime: `${slot.formatted} on ${formatDate(requestedTime)}` // Full string for Emily to use
       });
     }
   }
 
-  // Add a morning slot from next day
+  // Add a morning slot from next day if needed
   if (alternatives.length < 3 && nextDaySlots.length > 0) {
     const morningSlot = nextDaySlots.find(s => s.start.getHours() >= 9 && s.start.getHours() <= 11);
     if (morningSlot) {
       alternatives.push({
         time: morningSlot.start,
         formatted: morningSlot.formatted,
-        day: formatDate(nextDay)
+        day: formatDate(nextDay),
+        fullDateTime: `${morningSlot.formatted} on ${formatDate(nextDay)}`
       });
     }
   }

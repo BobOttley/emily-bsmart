@@ -500,12 +500,14 @@ app.post('/api/:schoolId/realtime/tool/schedule_meeting', async (req, res) => {
       }
     } else {
       // Slot is busy - suggest alternatives
+      // IMPORTANT: Always include the FULL DATE so Emily doesn't lose context
       const alternatives = await calendarService.suggestAlternatives(requestedTime);
       const busyPhrase = calendarService.getRandomPhrase('busy');
 
       let alternativeText = '';
       if (alternatives.length > 0) {
-        alternativeText = alternatives.map(a => `${a.formatted} on ${a.day}`).join(', or ');
+        // Use fullDateTime which includes the day (e.g., "14:30 on Monday, 3 February")
+        alternativeText = alternatives.map(a => a.fullDateTime).join(', or ');
       }
 
       return res.json({
@@ -514,6 +516,7 @@ app.post('/api/:schoolId/realtime/tool/schedule_meeting', async (req, res) => {
         busy: true,
         busy_phrase: busyPhrase,
         alternatives: alternatives,
+        requested_day: calendarService.formatDate(requestedTime),
         message: `${busyPhrase}. How about ${alternativeText}?`
       });
     }
