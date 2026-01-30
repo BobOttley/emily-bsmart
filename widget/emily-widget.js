@@ -651,13 +651,20 @@
                              (text.includes('products') && text.includes('interested'));
     const isAskingMeetingType = text.includes('teams') && (text.includes('in person') || text.includes('in-person') || text.includes('prefer'));
     const isAskingLocation = text.includes('where') && (text.includes('meet') || text.includes('location'));
-    const isAskingWeek = text.includes('week') && !text.includes('day of');
-    const isAskingDay = text.includes('which day') || text.includes('what day') ||
-                        (text.includes('day') && text.includes('suit')) ||
-                        text.includes('monday') || text.includes('tuesday');
-    const isAskingTime = text.includes('time') && (text.includes('what') || text.includes('suit') || text.includes('prefer'));
 
-    // Sync stage based on Emily's question
+    // DAY detection - check BEFORE week (because "which day that week" contains "week")
+    const isAskingDay = text.includes('which day') || text.includes('what day') ||
+                        text.includes('monday, tuesday') || text.includes('monday or tuesday') ||
+                        (text.includes('day') && text.includes('suits you'));
+
+    // WEEK detection - but NOT if asking about day
+    const isAskingWeek = text.includes('what week') ||
+                         (text.includes('week') && text.includes('best') && !isAskingDay);
+
+    const isAskingTime = text.includes('what time') || text.includes('time suits') ||
+                         text.includes('time of day');
+
+    // Sync stage based on Emily's question - ORDER MATTERS!
     if (isAskingDetails) {
       bookingStage = 1;
       console.log('SYNC: Emily asking details - Stage 1');
@@ -670,12 +677,13 @@
     } else if (isAskingLocation && bookingStage !== null) {
       bookingStage = 3.5;
       console.log('SYNC: Emily asking location - Stage 3.5');
+    } else if (isAskingDay && bookingStage !== null) {
+      // CHECK DAY BEFORE WEEK!
+      bookingStage = 4.5;
+      console.log('SYNC: Emily asking day - Stage 4.5');
     } else if (isAskingWeek && bookingStage !== null) {
       bookingStage = 4;
       console.log('SYNC: Emily asking week - Stage 4');
-    } else if (isAskingDay && bookingStage !== null) {
-      bookingStage = 4.5;
-      console.log('SYNC: Emily asking day - Stage 4.5');
     } else if (isAskingTime && bookingStage !== null) {
       bookingStage = 5;
       console.log('SYNC: Emily asking time - Stage 5');
