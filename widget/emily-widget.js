@@ -27,7 +27,8 @@
   };
 
   // Booking flow state machine
-  // Stages: null (not booking), 1 (details), 2 (products), 3 (meeting type), 4 (week), 5 (time), 6 (done)
+  // Stages: null (not booking), 1 (details), 2 (products), 3 (meeting type),
+  //         3.5 (location for in-person), 4 (week), 4.5 (day), 5 (time), 6 (pending/booking), null (done)
   let bookingStage = null;
 
   // Screen awareness state
@@ -532,8 +533,9 @@
       bookingStage = 5;
       console.log('BOOKING: Day selected - Stage 5 (Time)');
     } else if (bookingStage === 5) {
-      // User selected time - booking will be made, stage will reset when confirmed
-      console.log('BOOKING: Time selected - Waiting for confirmation');
+      // User selected time - move to pending stage
+      bookingStage = 6;
+      console.log('BOOKING: Time selected - Stage 6 (Pending booking)');
     }
   }
 
@@ -726,6 +728,12 @@
       // Stage 5: Time selection
       buttons.push({ label: 'Pick a Time', type: 'time-picker' });
       return buttons;
+    }
+
+    if (bookingStage === 6) {
+      // Stage 6: Pending - booking in progress, no buttons needed
+      console.log('BOOKING: Stage 6 - Waiting for booking confirmation, no buttons');
+      return buttons; // Empty - no buttons while booking is processing
     }
 
     // NOT IN BOOKING FLOW - use simple detection for general conversation
