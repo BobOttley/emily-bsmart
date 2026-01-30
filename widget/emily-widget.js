@@ -541,6 +541,9 @@
           if (btn.type === 'form') {
             return `<button class="emily-context-btn emily-form-trigger" data-form="${btn.form}">${escapeHtml(btn.label)}</button>`;
           }
+          if (btn.type === 'time-picker') {
+            return `<button class="emily-context-btn emily-time-trigger">${escapeHtml(btn.label)}</button>`;
+          }
           return `<button class="emily-context-btn" data-q="${escapeHtml(btn.query)}">${escapeHtml(btn.label)}</button>`;
         }).join('');
         history.appendChild(buttonsDiv);
@@ -550,6 +553,8 @@
           btn.addEventListener('click', () => {
             if (btn.classList.contains('emily-form-trigger')) {
               showBookingForm(btn.dataset.form);
+            } else if (btn.classList.contains('emily-time-trigger')) {
+              showTimePicker();
             } else {
               document.getElementById('emily-input').value = btn.dataset.q;
               sendMessage();
@@ -613,11 +618,26 @@
       return buttons;
     }
 
-    // If Emily is asking about date/time ONLY - no buttons, let user type
-    if (text.includes('when would') || text.includes('what time') || text.includes('what day') ||
-        text.includes('what date') || text.includes('suit you') ||
-        text.includes('when suits') || text.includes('when works') ||
-        text.includes('works best')) {
+    // Emily asking about TIME specifically - show time picker
+    const isAskingTime = (text.includes('what time') || text.includes('time preference') ||
+                          text.includes('preferred time') || text.includes('time of day') ||
+                          text.includes('time would suit') || text.includes('time works')) &&
+                         !text.includes('date') && !text.includes('week') && !text.includes('day');
+
+    if (isAskingTime) {
+      buttons.push({ label: 'Pick a Time', type: 'time-picker' });
+      return buttons;
+    }
+
+    // Emily asking about DATE/WEEK - show week selection buttons
+    const isAskingDate = text.includes('what date') || text.includes('what day') ||
+                         text.includes('when would') || text.includes('which week') ||
+                         text.includes('suit you') || text.includes('when suits') ||
+                         text.includes('when works') || text.includes('works best');
+
+    if (isAskingDate) {
+      const weekButtons = getWeekButtons();
+      weekButtons.forEach(btn => buttons.push(btn));
       return buttons;
     }
 
@@ -766,6 +786,139 @@
     const detailsMessage = `${name}, ${email}, ${school || 'Not specified'}, ${role || 'Not specified'}`;
     document.getElementById('emily-input').value = detailsMessage;
     sendMessage();
+  }
+
+  // Get week selection buttons for the next 3 weeks
+  function getWeekButtons() {
+    const buttons = [];
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ... 5 = Friday, 6 = Saturday
+
+    // Calculate next Monday
+    let daysUntilNextMonday = (8 - dayOfWeek) % 7;
+    if (daysUntilNextMonday === 0) daysUntilNextMonday = 7; // If today is Monday, go to next Monday
+
+    // If it's Thursday or Friday, skip "this week" - not enough working days
+    // Start from next week instead
+    let startOffset = 0;
+    if (dayOfWeek >= 4 && dayOfWeek <= 6) { // Thursday, Friday, Saturday
+      startOffset = 0; // Will start from next Monday anyway
+    } else if (dayOfWeek >= 1 && dayOfWeek <= 3) { // Mon-Wed: can offer this week
+      // Actually offer "this week" - calculate the Monday of this week
+      const thisMonday = new Date(today);
+      thisMonday.setDate(today.getDate() - (dayOfWeek - 1));
+
+      const formattedThisWeek = formatWeekCommencing(thisMonday);
+      buttons.push({
+        label: `This week (w/c ${formattedThisWeek})`,
+        query: `This week, week commencing ${formattedThisWeek}`
+      });
+    }
+
+    // Add next 3 weeks starting from next Monday
+    for (let i = 0; i < 3; i++) {
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() + daysUntilNextMonday + (i * 7));
+
+      const formatted = formatWeekCommencing(weekStart);
+      const weekLabel = i === 0 ? 'Next week' : (i === 1 ? 'Week after' : 'In 3 weeks');
+
+      buttons.push({
+        label: `${weekLabel} (w/c ${formatted})`,
+        query: `Week commencing ${formatted}`
+      });
+    }
+
+    // Limit to 3 buttons max
+    return buttons.slice(0, 3);
+  }
+
+  // Format date as "3rd February"
+  function formatWeekCommencing(date) {
+    const day = date.getDate();
+    const suffix = getDaySuffix(day);
+    const month = date.toLocaleDateString('en-GB', { month: 'long' });
+    return `${day}${suffix} ${month}`;
+  }
+
+  function getDaySuffix(day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  }
+
+  // Show time picker UI
+  function showTimePicker() {
+    const history = document.getElementById('emily-chat-history');
+
+    // Remove any existing picker
+    const existingPicker = document.getElementById('emily-time-picker');
+    if (existingPicker) existingPicker.remove();
+
+    const timeSlots = [
+      { label: '9:00 AM', value: '9:00 AM' },
+      { label: '9:30 AM', value: '9:30 AM' },
+      { label: '10:00 AM', value: '10:00 AM' },
+      { label: '10:30 AM', value: '10:30 AM' },
+      { label: '11:00 AM', value: '11:00 AM' },
+      { label: '11:30 AM', value: '11:30 AM' },
+      { label: '12:00 PM', value: '12:00 PM' },
+      { label: '12:30 PM', value: '12:30 PM' },
+      { label: '1:00 PM', value: '1:00 PM' },
+      { label: '1:30 PM', value: '1:30 PM' },
+      { label: '2:00 PM', value: '2:00 PM' },
+      { label: '2:30 PM', value: '2:30 PM' },
+      { label: '3:00 PM', value: '3:00 PM' },
+      { label: '3:30 PM', value: '3:30 PM' },
+      { label: '4:00 PM', value: '4:00 PM' },
+      { label: '4:30 PM', value: '4:30 PM' },
+      { label: '5:00 PM', value: '5:00 PM' }
+    ];
+
+    const morningSlots = timeSlots.filter(s => s.value.includes('AM') || s.value === '12:00 PM' || s.value === '12:30 PM');
+    const afternoonSlots = timeSlots.filter(s => s.value.includes('PM') && !s.value.includes('12:'));
+
+    const pickerHtml = `
+      <div id="emily-time-picker" class="emily-time-picker">
+        <div class="emily-picker-title">Select a Time</div>
+        <div class="emily-time-sections">
+          <div class="emily-time-section">
+            <div class="emily-time-section-title">Morning</div>
+            <div class="emily-time-grid">
+              ${morningSlots.map(s => `<button class="emily-time-slot" data-time="${s.value}">${s.label}</button>`).join('')}
+            </div>
+          </div>
+          <div class="emily-time-section">
+            <div class="emily-time-section-title">Afternoon</div>
+            <div class="emily-time-grid">
+              ${afternoonSlots.map(s => `<button class="emily-time-slot" data-time="${s.value}">${s.label}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+        <button id="emily-time-cancel" class="emily-form-btn emily-form-btn--cancel">Cancel</button>
+      </div>
+    `;
+
+    history.insertAdjacentHTML('beforeend', pickerHtml);
+    history.scrollTop = history.scrollHeight;
+
+    // Attach click handlers
+    document.querySelectorAll('.emily-time-slot').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const time = btn.dataset.time;
+        document.getElementById('emily-time-picker').remove();
+        document.getElementById('emily-input').value = time;
+        sendMessage();
+      });
+    });
+
+    document.getElementById('emily-time-cancel').addEventListener('click', () => {
+      document.getElementById('emily-time-picker').remove();
+    });
   }
 
   function formatMessage(text) {
@@ -1537,6 +1690,67 @@
       }
       .emily-form-btn--submit:hover {
         filter: brightness(1.1);
+      }
+
+      /* Time Picker */
+      .emily-time-picker {
+        background: #fff;
+        border: 2px solid var(--emily-primary);
+        border-radius: 12px;
+        padding: 16px;
+        margin: 12px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      .emily-picker-title {
+        font-weight: 600;
+        color: var(--emily-primary);
+        margin-bottom: 12px;
+        font-size: 14px;
+        text-align: center;
+      }
+      .emily-time-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .emily-time-section {
+        padding: 8px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+      .emily-time-section-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .emily-time-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      .emily-time-slot {
+        padding: 8px 4px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #333;
+      }
+      .emily-time-slot:hover {
+        background: var(--emily-primary);
+        border-color: var(--emily-primary);
+        color: #fff;
+        transform: scale(1.02);
+      }
+      .emily-time-picker .emily-form-btn--cancel {
+        width: 100%;
+        margin-top: 12px;
       }
 
       /* Mobile */
