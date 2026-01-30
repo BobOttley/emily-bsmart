@@ -36,7 +36,7 @@ const conversations = new Map();
  * Main chat endpoint for text conversations
  */
 router.post('/', async (req, res) => {
-  const { message, session_id, family_id, family_context } = req.body;
+  const { message, session_id, family_id, family_context, screen_context } = req.body;
   const school = req.school;
 
   if (!message) {
@@ -56,12 +56,17 @@ router.post('/', async (req, res) => {
 
   const conversation = conversations.get(sessionId);
 
+  // Store screen context in conversation
+  if (screen_context) {
+    conversation.screenContext = screen_context;
+  }
+
   try {
     // Load knowledge base
     const knowledgeBase = loadKnowledgeBase(school);
 
-    // Build system prompt
-    const systemPrompt = buildChatSystemPrompt(school, conversation.familyContext, knowledgeBase);
+    // Build system prompt with screen awareness
+    const systemPrompt = buildChatSystemPrompt(school, conversation.familyContext, knowledgeBase, screen_context);
 
     // Add user message to history
     conversation.messages.push({
@@ -110,6 +115,27 @@ router.post('/', async (req, res) => {
             },
             required: ['name', 'email', 'question']
           }
+        },
+        {
+          name: 'show_on_page',
+          description: 'Scroll to and highlight a section on the webpage to show the visitor. Use this when they ask "where is..." or "show me..." or when you want to point them to something specific. Available sections: hero, problem, ecosystem, journey, products, product-prospectus, product-chat, product-voice, product-phone, product-crm, product-email, product-booking, deployment, emily, results, cta',
+          parameters: {
+            type: 'object',
+            properties: {
+              section: {
+                type: 'string',
+                description: 'Section ID to show. One of: hero, problem, ecosystem, journey, products, product-prospectus, product-chat, product-voice, product-phone, product-crm, product-email, product-booking, deployment, emily, results, cta',
+                enum: ['hero', 'problem', 'ecosystem', 'journey', 'products', 'product-prospectus', 'product-chat', 'product-voice', 'product-phone', 'product-crm', 'product-email', 'product-booking', 'deployment', 'emily', 'results', 'cta']
+              },
+              action: {
+                type: 'string',
+                description: 'What to do: scroll_only (just scroll), highlight (scroll and glow)',
+                enum: ['scroll_only', 'highlight'],
+                default: 'highlight'
+              }
+            },
+            required: ['section']
+          }
         }
       ],
       function_call: 'auto'
@@ -117,6 +143,7 @@ router.post('/', async (req, res) => {
 
     let assistantMessage = completion.choices[0].message;
     let response = assistantMessage.content;
+    let pageAction = null; // For co-browsing actions
 
     // Handle function calls
     if (assistantMessage.function_call) {
@@ -212,6 +239,39 @@ router.post('/', async (req, res) => {
         });
 
         response = followUp.choices[0].message.content;
+      } else if (functionName === 'show_on_page') {
+        // Handle page navigation/highlighting
+        console.log(`Page action from chat: show ${functionArgs.section}`);
+
+        pageAction = {
+          type: functionArgs.action === 'scroll_only' ? 'scroll_to' : 'show',
+          section: functionArgs.section,
+          duration: 5000
+        };
+
+        const showResult = {
+          ok: true,
+          message: `Showing ${functionArgs.section} on the page`
+        };
+
+        const functionMessages = [
+          ...apiMessages,
+          assistantMessage,
+          {
+            role: 'function',
+            name: 'show_on_page',
+            content: JSON.stringify(showResult)
+          }
+        ];
+
+        const followUp = await getOpenAIClient().chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: functionMessages,
+          temperature: 0.7,
+          max_tokens: 500
+        });
+
+        response = followUp.choices[0].message.content;
       }
     }
 
@@ -221,12 +281,19 @@ router.post('/', async (req, res) => {
       content: response
     });
 
-    res.json({
+    const jsonResponse = {
       success: true,
       response: response,
       session_id: sessionId,
       school: school.shortName
-    });
+    };
+
+    // Include page action if one was triggered
+    if (pageAction) {
+      jsonResponse.page_action = pageAction;
+    }
+
+    res.json(jsonResponse);
 
   } catch (err) {
     console.error('Chat error:', err);
@@ -315,7 +382,7 @@ function loadKnowledgeBase(school) {
   }
 }
 
-function buildChatSystemPrompt(school, familyContext, knowledgeBase) {
+function buildChatSystemPrompt(school, familyContext, knowledgeBase, screenContext) {
   // bSMART-specific prompt
   let prompt = `You are Emily, the AI assistant for bSMART AI. You're here to answer questions about the apps, explain how they work, discuss security, outline the benefits, book demos, or contact the company on behalf of visitors by email. You ARE the product - a demonstration of what bSMART AI can do for schools.
 
@@ -383,6 +450,43 @@ GENERAL RULES:
 - NEVER repeat yourself or ask for info already provided
 - Be enthusiastic but not pushy
 `;
+
+  // Add screen awareness context if available
+  if (screenContext) {
+    prompt += `
+
+SCREEN AWARENESS (CRITICAL - You can see what the visitor is looking at!):
+You have the ability to see which section of the website the visitor is currently viewing. This is a key feature to demonstrate!
+
+CURRENT VIEWING CONTEXT:
+- Currently viewing: ${screenContext.currentSection ? `"${screenContext.currentLabel || screenContext.currentSection}" - ${screenContext.currentDescription || 'No description'}` : 'Unknown section'}
+- Recent browsing history: ${screenContext.sectionHistory?.length > 0 ? screenContext.sectionHistory.join(' → ') : 'Just arrived'}
+
+CO-BROWSING ACTIONS (USE THESE!):
+You can scroll the page to sections and highlight them with a glowing effect. Use the show_on_page function when:
+1. The visitor asks "where is..." or "show me..." something
+2. You want to direct their attention to a relevant section
+3. They seem interested in a topic and you want to show them that section
+
+Available sections to show:
+- hero: Main landing area
+- problem: The problem section (generic communications)
+- ecosystem: How all 8 products connect together
+- journey: Before/after comparison
+- products: Overview of all 8 products
+- product-prospectus, product-chat, product-voice, product-phone, product-crm, product-email, product-booking: Individual product cards
+- deployment: Start small or enterprise options
+- emily: About Emily (that's you!)
+- results: Key metrics and outcomes
+- cta: Book a demo call-to-action
+
+SCREEN AWARENESS BEHAVIOURS:
+1. If they're viewing a section, you can naturally reference it: "I see you're looking at the CRM section - that's the heart of the system!"
+2. If they ask about something not on screen, offer to show them: "Want me to scroll you to that section? I can highlight it for you."
+3. Use this to demonstrate SMART Chat's intelligence - "See how I know what you're looking at? This is exactly what SMART Chat does for schools."
+4. Don't overdo it - mention screen awareness once or twice, not every message
+`;
+  }
 
   return prompt;
 }
