@@ -378,11 +378,13 @@ router.post('/', async (req, res) => {
           } else {
             // Check if in-person meeting needs location
             const isInPerson = functionArgs.meeting_type === 'in_person';
-            console.log('MEETING TYPE CHECK: isInPerson=', isInPerson, 'location=', functionArgs.location);
+            // Use location from AI, OR fall back to stored school from user details
+            const resolvedLocation = functionArgs.location || conversation.userDetails?.school || null;
+            console.log('MEETING TYPE CHECK: isInPerson=', isInPerson, 'aiLocation=', functionArgs.location, 'storedSchool=', conversation.userDetails?.school, 'resolved=', resolvedLocation);
 
-            if (isInPerson && !functionArgs.location) {
-              // Need location for in-person meeting
-              console.log('MISSING LOCATION - asking user for address');
+            if (isInPerson && !resolvedLocation) {
+              // Need location for in-person meeting - no fallback available
+              console.log('MISSING LOCATION - no AI location and no stored school');
               const scheduleResult = {
                 ok: false,
                 needs_location: true,
@@ -413,14 +415,11 @@ router.post('/', async (req, res) => {
                 let confirmMessage;
 
                 if (isInPerson) {
-                  // Create in-person meeting
-                  // Use location from function args, OR fall back to stored school name from user details
-                  const meetingLocation = functionArgs.location || conversation.userDetails?.school || 'Location to be confirmed';
-
+                  // Create in-person meeting using resolvedLocation (already computed with fallback)
                   console.log('BOOKING IN-PERSON MEETING:');
                   console.log('  attendeeName:', attendeeName);
                   console.log('  attendeeEmail:', attendeeEmail);
-                  console.log('  location:', meetingLocation);
+                  console.log('  location:', resolvedLocation);
                   console.log('  time:', requestedTime.toString());
 
                   meetingResult = await calendarService.createInPersonMeeting({
@@ -429,10 +428,10 @@ router.post('/', async (req, res) => {
                     durationMinutes: 60, // Longer for in-person
                     attendeeEmail: attendeeEmail,
                     attendeeName: attendeeName,
-                    location: meetingLocation,
-                    description: `<p>In-person meeting with ${attendeeName}</p><p>Location: ${meetingLocation}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
+                    location: resolvedLocation,
+                    description: `<p>In-person meeting with ${attendeeName}</p><p>Location: ${resolvedLocation}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
                   });
-                  confirmMessage = `I've booked an in-person meeting for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)} at ${meetingLocation}. A calendar invite has been sent to ${attendeeEmail}.`;
+                  confirmMessage = `I've booked an in-person meeting for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)} at ${resolvedLocation}. A calendar invite has been sent to ${attendeeEmail}.`;
                 } else {
                   // Create Teams meeting
                   meetingResult = await calendarService.createTeamsMeeting({
@@ -460,7 +459,7 @@ router.post('/', async (req, res) => {
                     meeting_time: requestedTime.toISOString(),
                     formatted_time: `${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)}`,
                     // DO NOT include teams_link - it should only be in the calendar invite email
-                    location: functionArgs.location || null,
+                    location: resolvedLocation || null,
                     message: `${busyPhrase}! ${confirmMessage}`,
                     instructions: 'DO NOT show any meeting links or URLs in your response. Just confirm the date, time, and that a calendar invite has been sent.'
                   };
