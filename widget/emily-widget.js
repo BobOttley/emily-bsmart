@@ -649,12 +649,12 @@
     // DEMO FLOW DETECTION (prioritised over booking)
     // =========================================================================
 
-    // Demo fork: "explain or show you" / "which would you prefer"
-    if ((text.includes('explain') && text.includes('show')) ||
+    // Demo fork: "explain or show/demonstrate" / "which would you prefer"
+    if ((text.includes('explain') && (text.includes('show') || text.includes('demonstrat'))) ||
         (text.includes('two ways') && text.includes('prefer'))) {
       console.log('DEMO FORK DETECTED');
       buttons.push(
-        { label: 'Show me how it works', query: 'Show me how it works' },
+        { label: 'Show me live', query: 'Show me how it works - demonstrate it' },
         { label: 'Explain first', query: 'Explain the products first' }
       );
       return buttons;
