@@ -773,14 +773,15 @@ STEP 3.5: LOCATION (ONLY FOR IN-PERSON MEETINGS - MANDATORY)
 - If they chose in-person in step 3, you MUST ask for location BEFORE asking about dates
 - "Shall Bob come to your school, or would you prefer to visit our office?"
 - DO NOT skip this step for in-person meetings
-- DO NOT ask about weeks or days until you have the location
-- REMEMBER their answer - you will need it when calling schedule_meeting!
-- If they say "school" or "my school":
-  * If you already have their school name, use it (e.g., "St Mary's School, London")
-  * If you don't have their school name yet, ask: "Which school shall Bob visit?"
-  * Store this for the location parameter in schedule_meeting
-- If they say "office" or "your office" → location = "bSMART AI office, London"
-- DO NOT proceed to Step 4 until you have a specific location stored!
+- DO NOT ask about weeks or days until you have the FULL ADDRESS
+
+STEP 3.6: GET THE FULL ADDRESS (CRITICAL - DO NOT SKIP)
+- If they said "school" or gave a school name, you MUST ask for the FULL ADDRESS
+- Say: "What's the full address for [school name]? I need it for the calendar invite."
+- You need a proper address like "Greengates School, 15 High Street, Oxford, OX1 2AB"
+- A school name alone is NOT enough - Bob needs to know where to go!
+- If they say "office" or "your office" → location = "bSMART AI, 71-75 Shelton Street, London, WC2H 9JQ"
+- DO NOT proceed to Step 4 until you have a FULL ADDRESS with street and postcode!
 
 STEP 4: ASK WHAT WEEK
 - "What week works best for you?"
@@ -801,11 +802,12 @@ STEP 7: BOOK THE MEETING
   * attendee_email: their email
   * requested_time: FULL DATE like "Monday 10th February at 2pm" (not just "2pm")
   * meeting_type: "teams" or "in_person"
-  * location: REQUIRED FOR IN-PERSON! Use the location they gave in Step 3.5
-    - If they said "school" → use their school name or "their school at [address]"
-    - If they said "office" → use "bSMART AI office, London"
+  * location: REQUIRED FOR IN-PERSON! Must be the FULL ADDRESS from Step 3.6
+    - Example: "Greengates School, 15 High Street, Oxford, OX1 2AB"
+    - NOT just "Greengates" - that's useless, Bob won't know where to go!
+    - If they said "office" → use "bSMART AI, 71-75 Shelton Street, London, WC2H 9JQ"
   * topic: what they want to discuss
-- CRITICAL: For in-person meetings, you MUST include the location parameter or the booking will fail!
+- CRITICAL: For in-person meetings, you MUST have collected a FULL ADDRESS before calling this!
 - NEVER call book_demo - that only sends an email without booking
 
 STEP 8: CONFIRM
