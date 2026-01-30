@@ -410,16 +410,19 @@ router.post('/', async (req, res) => {
 
                 if (isInPerson) {
                   // Create in-person meeting
+                  // Use location from function args, OR fall back to stored school name from user details
+                  const meetingLocation = functionArgs.location || conversation.userDetails?.school || 'Location to be confirmed';
+
                   meetingResult = await calendarService.createInPersonMeeting({
                     subject: `bSMART AI Meeting - ${attendeeName}`,
                     startTime: requestedTime,
                     durationMinutes: 60, // Longer for in-person
                     attendeeEmail: attendeeEmail,
                     attendeeName: attendeeName,
-                    location: functionArgs.location,
-                    description: `<p>In-person meeting with ${attendeeName}</p><p>School: ${functionArgs.school_name || 'Not specified'}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
+                    location: meetingLocation,
+                    description: `<p>In-person meeting with ${attendeeName}</p><p>Location: ${meetingLocation}</p><p>Topic: ${functionArgs.topic || 'bSMART AI Demo'}</p><p>Booked by Emily (AI Assistant)</p>`
                   });
-                  confirmMessage = `I've booked an in-person meeting for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)} at ${functionArgs.location}. A calendar invite has been sent to ${attendeeEmail}.`;
+                  confirmMessage = `I've booked an in-person meeting for ${calendarService.formatDate(requestedTime)} at ${calendarService.formatTimeSlot(requestedTime)} at ${meetingLocation}. A calendar invite has been sent to ${attendeeEmail}.`;
                 } else {
                   // Create Teams meeting
                   meetingResult = await calendarService.createTeamsMeeting({
