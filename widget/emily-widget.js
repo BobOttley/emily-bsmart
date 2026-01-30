@@ -618,9 +618,16 @@
       return buttons;
     }
 
-    // Demo/booking mentioned - offer Teams or In-Person (NO "Ask a question first")
-    if (text.includes('demo') || text.includes('bob') || text.includes('meeting') || text.includes('call')) {
-      if (!text.includes('booked') && !text.includes('calendar invite') && !text.includes('when would') && !text.includes('what time')) {
+    // Demo/booking mentioned - offer Teams or In-Person ONLY if Emily hasn't already asked about time
+    // Once the user has chosen Teams or In-Person, Emily will ask about time - DON'T show these buttons again
+    if (text.includes('demo') || text.includes('bob') || text.includes('meeting')) {
+      // DON'T show if Emily is asking about time/date (user already chose meeting type)
+      const isAskingAboutTime = text.includes('what date') || text.includes('what time') ||
+                                 text.includes('when would') || text.includes('suit you') ||
+                                 text.includes('teams video call') || text.includes('teams call');
+      const isBookingComplete = text.includes('booked') || text.includes('calendar invite');
+
+      if (!isAskingAboutTime && !isBookingComplete) {
         buttons.push(
           { label: 'Teams Call', query: "I'd like a Teams video call" },
           { label: 'Visit In Person', query: "I'd prefer to meet in person" }
@@ -1298,36 +1305,35 @@
         filter: brightness(1.1);
       }
 
-      /* Contextual Buttons (after bot messages) - DIFFERENT from fixed quick replies */
+      /* Contextual Buttons (after bot messages) - SOLID FILLED style, different from outline quick replies */
       .emily-context-buttons {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
-        padding: 8px 12px;
+        gap: 8px;
+        padding: 10px 12px;
         margin-bottom: 8px;
       }
       .emily-context-btn {
-        padding: 8px 14px;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        color: #495057;
-        font-size: 12px;
+        padding: 10px 16px;
+        background: #2c3e50;
+        color: #fff;
+        font-size: 13px;
         font-weight: 500;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        border: none;
         cursor: pointer;
         transition: all 0.2s ease;
         white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
       }
       .emily-context-btn:hover {
-        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-        border-color: #adb5bd;
+        background: #1a252f;
         transform: translateY(-1px);
-        box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.2);
       }
       .emily-context-btn:active {
         transform: translateY(0);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15);
       }
 
       /* Formatted Message Content */
