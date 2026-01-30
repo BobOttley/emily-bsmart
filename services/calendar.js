@@ -525,11 +525,11 @@ function formatDate(date) {
  */
 const busyBobPhrases = {
   available: [
-    "Bob can squeeze that in",
-    "That slot happens to be free",
-    "Bob's got a small window then",
-    "That works - I can slot you in",
-    "Perfect timing - there's a gap there"
+    "That works perfectly",
+    "That's available",
+    "Perfect, that works",
+    "Great, that time is free",
+    "Lovely, that works"
   ],
   busy: [
     "Bob's in back-to-back meetings then",
