@@ -344,32 +344,62 @@
     'default': "Hi! I noticed you're exploring. Want me to help you find what you're looking for?"
   };
 
+  // Page-level messages based on URL
+  const pageMessages = {
+    'booking': "I see you're learning about SMART Booking! It handles open days, tours, taster days - everything automated. Any questions?",
+    'prospectus': "Exploring SMART Prospectus? It creates a unique, personalised digital prospectus for every family. Want to know how?",
+    'chatbot': "You're looking at SMART Chat - that's me! I answer questions 24/7 and never miss an enquiry. What would you like to know?",
+    'voice': "SMART Voice lets families talk naturally with me in over 100 languages. Want to hear more about it?",
+    'crm': "SMART CRM is the heart of the system - every interaction, every signal, one complete picture. Questions?",
+    'email': "SMART Email makes every message genuinely personal - no more 'Dear Parent/Guardian'. Interested?",
+    'contact': "Ready to get in touch? I can answer questions right here, or help you book a demo with Bob!",
+    'analytics': "SMART Analytics gives you insights across the entire family journey. Want to know what you can measure?"
+  };
+
+  // Detect current page from URL
+  function detectCurrentPage() {
+    const path = window.location.pathname.toLowerCase();
+    const filename = path.split('/').pop().replace('.html', '');
+    return filename || 'index';
+  }
+
   function showContextualBubble() {
     let message = sectionMessages['default'];
 
-    // Try to get current section from page if we don't have it
-    if (!currentViewingSection && typeof window.emilyGetContext === 'function') {
-      const context = window.emilyGetContext();
-      if (context && context.currentSection) {
-        currentViewingSection = {
-          sectionId: context.currentSection,
-          label: context.currentLabel,
-          description: context.currentDescription
-        };
-      }
-    }
+    // First check which PAGE we're on
+    const currentPage = detectCurrentPage();
+    console.log('Emily: Current page:', currentPage);
 
-    if (currentViewingSection) {
-      const sectionId = currentViewingSection.sectionId || '';
-      console.log('Emily: Showing contextual bubble for section:', sectionId);
-      // Check for exact match first, then partial matches
-      if (sectionMessages[sectionId]) {
-        message = sectionMessages[sectionId];
-      } else if (sectionId.startsWith('product-')) {
-        message = sectionMessages['products'];
-      }
+    if (pageMessages[currentPage]) {
+      // We're on a specific product/feature page
+      message = pageMessages[currentPage];
+      console.log('Emily: Using page-level message for:', currentPage);
     } else {
-      console.log('Emily: No section detected, showing default message');
+      // We're on index or unknown page - check sections
+      // Try to get current section from page if we don't have it
+      if (!currentViewingSection && typeof window.emilyGetContext === 'function') {
+        const context = window.emilyGetContext();
+        if (context && context.currentSection) {
+          currentViewingSection = {
+            sectionId: context.currentSection,
+            label: context.currentLabel,
+            description: context.currentDescription
+          };
+        }
+      }
+
+      if (currentViewingSection) {
+        const sectionId = currentViewingSection.sectionId || '';
+        console.log('Emily: Showing contextual bubble for section:', sectionId);
+        // Check for exact match first, then partial matches
+        if (sectionMessages[sectionId]) {
+          message = sectionMessages[sectionId];
+        } else if (sectionId.startsWith('product-')) {
+          message = sectionMessages['products'];
+        }
+      } else {
+        console.log('Emily: No section detected, showing default message');
+      }
     }
 
     showBubble(message);
