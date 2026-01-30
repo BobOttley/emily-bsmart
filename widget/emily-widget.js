@@ -616,22 +616,20 @@
       return buttons;
     }
 
-    // Demo/booking mentioned - offer Teams or In-Person ONLY if Emily hasn't already asked about time
-    // Once the user has chosen Teams or In-Person, Emily will ask about time - DON'T show these buttons again
-    if (text.includes('demo') || text.includes('bob') || text.includes('meeting')) {
-      // DON'T show if Emily is asking about time/date (user already chose meeting type)
-      const isAskingAboutTime = text.includes('what date') || text.includes('what time') ||
-                                 text.includes('when would') || text.includes('suit you') ||
-                                 text.includes('teams video call') || text.includes('teams call');
-      const isBookingComplete = text.includes('booked') || text.includes('calendar invite');
+    // Teams vs In-Person - ONLY show when Emily is SPECIFICALLY asking about meeting type
+    // Must contain phrases like "teams or in person", "video call or", "prefer to meet"
+    const isAskingMeetingType = text.includes('teams or in person') ||
+                                 text.includes('teams or in-person') ||
+                                 text.includes('video call or') ||
+                                 text.includes('prefer a teams') ||
+                                 text.includes('would you like to meet via');
 
-      if (!isAskingAboutTime && !isBookingComplete) {
-        buttons.push(
-          { label: 'Teams Call', query: "I'd like a Teams video call" },
-          { label: 'Visit In Person', query: "I'd prefer to meet in person" }
-        );
-        return buttons;
-      }
+    if (isAskingMeetingType) {
+      buttons.push(
+        { label: 'Teams Call', query: "I'd like a Teams video call" },
+        { label: 'Visit In Person', query: "I'd prefer to meet in person" }
+      );
+      return buttons;
     }
 
     // In-person meeting - need to ask location
