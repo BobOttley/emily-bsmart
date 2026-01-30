@@ -347,6 +347,7 @@ router.post('/', async (req, res) => {
         }
 
         console.log(`Meeting request from chat: ${attendeeName} (${attendeeEmail}) - ${functionArgs.requested_time}`);
+        console.log('FUNCTION ARGS:', JSON.stringify(functionArgs, null, 2));
 
         try {
           // Parse the requested time
@@ -377,8 +378,11 @@ router.post('/', async (req, res) => {
           } else {
             // Check if in-person meeting needs location
             const isInPerson = functionArgs.meeting_type === 'in_person';
+            console.log('MEETING TYPE CHECK: isInPerson=', isInPerson, 'location=', functionArgs.location);
+
             if (isInPerson && !functionArgs.location) {
               // Need location for in-person meeting
+              console.log('MISSING LOCATION - asking user for address');
               const scheduleResult = {
                 ok: false,
                 needs_location: true,
