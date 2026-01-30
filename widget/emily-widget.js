@@ -563,9 +563,12 @@
   }
 
   // Smart contextual buttons based on conversation state
+  // VERSION 2.0 - 30 Jan 2026
   function getSmartButtons(responseText) {
     const text = responseText.toLowerCase();
     const buttons = [];
+
+    console.log('EMILY BUTTONS v2.0 - checking:', text.substring(0, 50));
 
     // Demo request - offer voice or chat experience
     if (text.includes('demo') && (text.includes('voice') || text.includes('chat') || text.includes('try') ||
@@ -595,14 +598,17 @@
       return buttons;
     }
 
-    // Emily asking about PRODUCTS - show product options
+    // Emily asking about PRODUCTS - show ALL product options
     if (text.includes('which products') || text.includes('what products') ||
         text.includes('interested in discussing') || text.includes('products are you interested')) {
       buttons.push(
         { label: 'SMART Prospectus', query: 'SMART Prospectus' },
+        { label: 'SMART CRM', query: 'SMART CRM' },
         { label: 'SMART Chat', query: 'SMART Chat' },
         { label: 'SMART Voice', query: 'SMART Voice' },
-        { label: 'Full Platform', query: 'I want to see the full platform' }
+        { label: 'SMART Booking', query: 'SMART Booking' },
+        { label: 'SMART Email', query: 'SMART Email' },
+        { label: 'Full Platform', query: 'I want to see the full platform - all products' }
       );
       return buttons;
     }
