@@ -293,6 +293,26 @@
         toggleChat();
       }
     };
+
+    // Open Emily and send a message (e.g., for "Book a Demo" buttons)
+    window.openEmilyWithMessage = function(message) {
+      if (!isOpen) {
+        toggleChat();
+      }
+      // Wait for chat to open, then send the message
+      setTimeout(() => {
+        const input = document.getElementById('emily-input');
+        if (input) {
+          input.value = message;
+          sendMessage();
+        }
+      }, 400);
+    };
+
+    // Shortcut for booking demos - opens Emily ready to book
+    window.bookDemoWithEmily = function() {
+      window.openEmilyWithMessage("I'd like to book a demo with Bob");
+    };
   }
 
   // =========================================================================
