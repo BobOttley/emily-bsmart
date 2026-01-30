@@ -809,7 +809,7 @@
         line-height: 1.4;
         cursor: pointer;
         animation: emily-bubbleIn 0.3s ease-out;
-        border: 1px solid #e0e0e0;
+        border: 2px solid var(--emily-primary);
       }
       #emily-bubble.emily-bubble-hidden {
         display: none;
