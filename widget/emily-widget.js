@@ -153,6 +153,12 @@
         ASK EMILY
       </div>
 
+      <!-- Proactive Speech Bubble (appears above toggle) -->
+      <div id="emily-bubble" class="emily-bubble-hidden">
+        <div id="emily-bubble-text"></div>
+        <button id="emily-bubble-close" aria-label="Close">&times;</button>
+      </div>
+
       <!-- Chat Window -->
       <div id="emily-chatbox" aria-live="polite">
         <div id="emily-resize-handle" title="Drag to resize"></div>
@@ -294,14 +300,49 @@
   // =========================================================================
 
   function setupProactiveEngagement() {
-    // Disabled auto-open - let users click the bubble to open
-    // The Emily bubble/button remains visible for users to click when ready
+    const bubble = document.getElementById('emily-bubble');
+    const bubbleText = document.getElementById('emily-bubble-text');
+    const bubbleClose = document.getElementById('emily-bubble-close');
 
-    console.log('Emily: Bubble visible, waiting for user to click');
+    // Show proactive bubble after 8 seconds
+    setTimeout(() => {
+      if (!isOpen && !hasAutoOpened) {
+        hasAutoOpened = true;
+        showBubble("Hi! I'm Emily. Want to learn about our 7 SMART products or book a demo?");
+      }
+    }, 8000);
+
+    // Clicking bubble opens chat
+    bubble.addEventListener('click', (e) => {
+      if (e.target !== bubbleClose) {
+        hideBubble();
+        toggleChat();
+      }
+    });
+
+    // Close button hides bubble
+    bubbleClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideBubble();
+    });
+
+    console.log('Emily: Proactive bubble enabled');
+  }
+
+  function showBubble(text) {
+    const bubble = document.getElementById('emily-bubble');
+    const bubbleText = document.getElementById('emily-bubble-text');
+    if (bubble && bubbleText) {
+      bubbleText.textContent = text;
+      bubble.classList.remove('emily-bubble-hidden');
+    }
   }
 
   function hideBubble() {
-    // Stub function - no external bubble to hide
+    const bubble = document.getElementById('emily-bubble');
+    if (bubble) {
+      bubble.classList.add('emily-bubble-hidden');
+    }
   }
 
   function addProactiveMessage(text) {
@@ -719,6 +760,50 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(0,0,0,0.25);
         filter: brightness(1.1);
+      }
+
+      /* Proactive Speech Bubble */
+      #emily-bubble {
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        max-width: 280px;
+        padding: 14px 40px 14px 16px;
+        background: var(--emily-primary);
+        color: #fff;
+        border-radius: 16px 16px 4px 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 999999;
+        font-size: 14px;
+        line-height: 1.4;
+        cursor: pointer;
+        animation: emily-bubbleIn 0.3s ease-out;
+      }
+      #emily-bubble.emily-bubble-hidden {
+        display: none;
+      }
+      #emily-bubble-close {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.7);
+        font-size: 18px;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #emily-bubble-close:hover {
+        color: #fff;
+      }
+      @keyframes emily-bubbleIn {
+        from { transform: translateY(10px) scale(0.95); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
       }
 
       /* Chatbox */
