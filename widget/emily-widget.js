@@ -642,51 +642,20 @@
       return buttons; // No buttons needed
     }
 
-    // DETECT what Emily is asking and SYNC the stage
-    // This ensures buttons match Emily's question even if stages got out of sync
-    const isAskingDetails = (text.includes('name') && text.includes('email')) ||
-                            text.includes('share your') || text.includes('your details');
-    const isAskingProducts = (text.includes('which') && text.includes('products')) ||
-                             (text.includes('what') && text.includes('products')) ||
-                             (text.includes('products') && text.includes('interested'));
-    const isAskingMeetingType = text.includes('teams') && (text.includes('in person') || text.includes('in-person') || text.includes('prefer'));
-    const isAskingLocation = text.includes('where') && (text.includes('meet') || text.includes('location'));
+    // NO DETECTION - Pure stage-based. Stage advances when user responds.
+    // Buttons shown are based ONLY on the current stage.
 
-    // DAY detection - check BEFORE week (because "which day that week" contains "week")
-    const isAskingDay = text.includes('which day') || text.includes('what day') ||
-                        text.includes('monday, tuesday') || text.includes('monday or tuesday') ||
-                        (text.includes('day') && text.includes('suits you'));
+    // Only thing we detect: booking complete (to reset)
+    if (text.includes('booked') && (text.includes('calendar') || text.includes('invite') || text.includes('confirmed'))) {
+      bookingStage = null;
+      console.log('BOOKING COMPLETE - Reset');
+      return buttons;
+    }
 
-    // WEEK detection - but NOT if asking about day
-    const isAskingWeek = text.includes('what week') ||
-                         (text.includes('week') && text.includes('best') && !isAskingDay);
-
-    const isAskingTime = text.includes('what time') || text.includes('time suits') ||
-                         text.includes('time of day');
-
-    // Sync stage based on Emily's question - ORDER MATTERS!
-    if (isAskingDetails) {
+    // Start booking flow if Emily asks for details and we're not already in flow
+    if (bookingStage === null && (text.includes('name') && text.includes('email'))) {
       bookingStage = 1;
-      console.log('SYNC: Emily asking details - Stage 1');
-    } else if (isAskingProducts && bookingStage !== null) {
-      bookingStage = 2;
-      console.log('SYNC: Emily asking products - Stage 2');
-    } else if (isAskingMeetingType && bookingStage !== null) {
-      bookingStage = 3;
-      console.log('SYNC: Emily asking meeting type - Stage 3');
-    } else if (isAskingLocation && bookingStage !== null) {
-      bookingStage = 3.5;
-      console.log('SYNC: Emily asking location - Stage 3.5');
-    } else if (isAskingDay && bookingStage !== null) {
-      // CHECK DAY BEFORE WEEK!
-      bookingStage = 4.5;
-      console.log('SYNC: Emily asking day - Stage 4.5');
-    } else if (isAskingWeek && bookingStage !== null) {
-      bookingStage = 4;
-      console.log('SYNC: Emily asking week - Stage 4');
-    } else if (isAskingTime && bookingStage !== null) {
-      bookingStage = 5;
-      console.log('SYNC: Emily asking time - Stage 5');
+      console.log('BOOKING STARTED - Stage 1');
     }
 
     // STAGE-BASED BUTTONS
