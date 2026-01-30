@@ -18,6 +18,10 @@
   let familyId = null;
   let familyContext = {};
 
+  // Booking flow state machine
+  // Stages: null (not booking), 1 (details), 2 (products), 3 (meeting type), 4 (week), 5 (time), 6 (done)
+  let bookingStage = null;
+
   // Screen awareness state
   let currentViewingSection = null;
   let sectionChangeTimeout = null;
@@ -476,10 +480,58 @@
     }
   }
 
+  // Advance booking stage based on user's response
+  function advanceBookingStage(userMessage) {
+    const msg = userMessage.toLowerCase();
+
+    // Detect if user wants to book a demo (START booking flow)
+    if (bookingStage === null && (msg.includes('book') && msg.includes('demo')) ||
+        msg.includes('book a call') || msg.includes('book a meeting') ||
+        msg.includes('schedule a demo') || msg.includes('arrange a demo')) {
+      bookingStage = 1; // Start at stage 1
+      console.log('BOOKING FLOW STARTED - Stage 1');
+      return;
+    }
+
+    // Advance through stages
+    if (bookingStage === 1) {
+      // User submitted their details - move to products
+      bookingStage = 2;
+      console.log('BOOKING: Details submitted - Stage 2 (Products)');
+    } else if (bookingStage === 2) {
+      // User selected a product - move to meeting type
+      bookingStage = 3;
+      console.log('BOOKING: Product selected - Stage 3 (Meeting type)');
+    } else if (bookingStage === 3) {
+      // User selected meeting type
+      if (msg.includes('in person') || msg.includes('in-person') || msg.includes('visit') || msg.includes('meet')) {
+        bookingStage = 3.5; // Need location
+        console.log('BOOKING: In-person selected - Stage 3.5 (Location)');
+      } else {
+        bookingStage = 4; // Teams - go to week
+        console.log('BOOKING: Teams selected - Stage 4 (Week)');
+      }
+    } else if (bookingStage === 3.5) {
+      // User provided location - move to week
+      bookingStage = 4;
+      console.log('BOOKING: Location provided - Stage 4 (Week)');
+    } else if (bookingStage === 4) {
+      // User selected week - move to time
+      bookingStage = 5;
+      console.log('BOOKING: Week selected - Stage 5 (Time)');
+    } else if (bookingStage === 5) {
+      // User selected time - booking will be made, stage will reset when confirmed
+      console.log('BOOKING: Time selected - Waiting for confirmation');
+    }
+  }
+
   async function sendMessage() {
     const input = document.getElementById('emily-input');
     const message = input.value.trim();
     if (!message) return;
+
+    // ADVANCE BOOKING STAGE when user responds
+    advanceBookingStage(message);
 
     input.value = '';
     addMessage('user', message);
@@ -505,7 +557,7 @@
       hideThinking();
 
       if (data.response) {
-        addMessage('bot', data.response, false); // Disabled contextual buttons - causing issues
+        addMessage('bot', data.response, true); // ENABLE contextual buttons
         sessionId = data.session_id || sessionId;
 
         // Execute any page actions returned by Emily
@@ -567,50 +619,65 @@
     history.scrollTop = history.scrollHeight;
   }
 
-  // Smart contextual buttons based on conversation state
-  // VERSION 2.0 - 30 Jan 2026
+  // ==========================================================================
+  // BOOKING FLOW STATE MACHINE - VERSION 3.0
+  // ==========================================================================
+  // Stages: null (not booking), 1 (details), 2 (products), 3 (meeting type),
+  //         3.5 (location for in-person), 4 (week), 5 (time), 6 (done)
+
   function getSmartButtons(responseText) {
     const text = responseText.toLowerCase();
     const buttons = [];
 
-    console.log('EMILY BUTTONS v2.0 - checking:', text.substring(0, 50));
+    console.log('EMILY BUTTONS v3.0 - Stage:', bookingStage, '- Text:', text.substring(0, 60));
 
-    // Demo request - offer voice or chat experience
-    if (text.includes('demo') && (text.includes('voice') || text.includes('chat') || text.includes('try') ||
-        text.includes('show') || text.includes('experience') || text.includes('action'))) {
-      buttons.push(
-        { label: 'Try Voice Demo', query: "I'd like to try the voice demo with a real school example" },
-        { label: 'Try Chat Demo', query: "I'd like to try the chat demo with a real school example" },
-        { label: 'Book a Call Instead', query: "Actually, I'd prefer to book a call with Bob" }
-      );
-      return buttons;
+    // Check if booking is confirmed - reset and exit
+    if (text.includes('booked') && (text.includes('calendar') || text.includes('invite'))) {
+      bookingStage = null; // Reset - booking complete
+      console.log('BOOKING COMPLETE - Reset to null');
+      return buttons; // No buttons needed
     }
 
-    // FIRST: Check if Emily is asking about meeting type (Teams vs In-Person)
-    // This takes priority over date/time questions
-    const isAskingMeetingType = text.includes('teams or in person') ||
-                                 text.includes('teams or in-person') ||
-                                 text.includes('teams video call, or') ||
-                                 text.includes('prefer a teams') ||
-                                 text.includes('meet in person') ||
-                                 text.includes('would you like to meet');
-
-    if (isAskingMeetingType) {
-      buttons.push(
-        { label: 'Teams Call', query: "I'd like a Teams video call" },
-        { label: 'Visit In Person', query: "I'd prefer to meet in person" }
-      );
-      return buttons;
-    }
-
-    // Emily asking about PRODUCTS - show ALL product options
-    // Match: "which products", "which SMART products", "products are you interested", "products are you most interested"
+    // DETECT what Emily is asking and SYNC the stage
+    // This ensures buttons match Emily's question even if stages got out of sync
+    const isAskingDetails = (text.includes('name') && text.includes('email')) ||
+                            text.includes('share your') || text.includes('your details');
     const isAskingProducts = (text.includes('which') && text.includes('products')) ||
                              (text.includes('what') && text.includes('products')) ||
-                             (text.includes('products') && text.includes('interested')) ||
-                             text.includes('interested in discussing');
+                             (text.includes('products') && text.includes('interested'));
+    const isAskingMeetingType = text.includes('teams') && (text.includes('in person') || text.includes('in-person') || text.includes('prefer'));
+    const isAskingLocation = text.includes('where') && (text.includes('meet') || text.includes('location'));
+    const isAskingWeek = text.includes('week') || text.includes('what date') || text.includes('when would');
+    const isAskingTime = text.includes('time') && (text.includes('what') || text.includes('suit') || text.includes('prefer'));
 
-    if (isAskingProducts) {
+    // Sync stage based on Emily's question
+    if (isAskingDetails) {
+      bookingStage = 1;
+      console.log('SYNC: Emily asking details - Stage 1');
+    } else if (isAskingProducts && bookingStage !== null) {
+      bookingStage = 2;
+      console.log('SYNC: Emily asking products - Stage 2');
+    } else if (isAskingMeetingType && bookingStage !== null) {
+      bookingStage = 3;
+      console.log('SYNC: Emily asking meeting type - Stage 3');
+    } else if (isAskingLocation && bookingStage !== null) {
+      bookingStage = 3.5;
+      console.log('SYNC: Emily asking location - Stage 3.5');
+    } else if (isAskingWeek && bookingStage !== null) {
+      bookingStage = 4;
+      console.log('SYNC: Emily asking week - Stage 4');
+    } else if (isAskingTime && bookingStage !== null) {
+      bookingStage = 5;
+      console.log('SYNC: Emily asking time - Stage 5');
+    }
+
+    // STAGE-BASED BUTTONS
+    if (bookingStage === 1) {
+      buttons.push({ label: 'Fill in my details', type: 'form', form: 'booking' });
+      return buttons;
+    }
+
+    if (bookingStage === 2) {
       buttons.push(
         { label: 'SMART Prospectus', query: 'SMART Prospectus' },
         { label: 'SMART CRM', query: 'SMART CRM' },
@@ -623,47 +690,49 @@
       return buttons;
     }
 
-    // Emily asking about TIME specifically - show time picker
-    const isAskingTime = (text.includes('what time') || text.includes('time preference') ||
-                          text.includes('preferred time') || text.includes('time of day') ||
-                          text.includes('time would suit') || text.includes('time works')) &&
-                         !text.includes('date') && !text.includes('week') && !text.includes('day');
-
-    if (isAskingTime) {
-      buttons.push({ label: 'Pick a Time', type: 'time-picker' });
+    if (bookingStage === 3) {
+      buttons.push(
+        { label: 'Teams Call', query: "I'd like a Teams video call" },
+        { label: 'Visit In Person', query: "I'd prefer to meet in person" }
+      );
       return buttons;
     }
 
-    // Emily asking about DATE/WEEK - show week selection buttons
-    const isAskingDate = text.includes('what date') || text.includes('what day') ||
-                         text.includes('when would') || text.includes('which week') ||
-                         text.includes('suit you') || text.includes('when suits') ||
-                         text.includes('when works') || text.includes('works best');
+    if (bookingStage === 3.5) {
+      // Stage 3.5: Location (for in-person meetings)
+      buttons.push(
+        { label: 'At my school', query: 'Can you come to my school?' },
+        { label: 'At your office', query: 'I can visit your office' }
+      );
+      return buttons;
+    }
 
-    if (isAskingDate) {
+    if (bookingStage === 4) {
+      // Stage 4: Week selection
       const weekButtons = getWeekButtons();
       weekButtons.forEach(btn => buttons.push(btn));
       return buttons;
     }
 
-    // Asking for contact details - show form button
-    if ((text.includes('name') && text.includes('email')) ||
-        text.includes('share your') || text.includes('your details') ||
-        text.includes('could you please share')) {
-      buttons.push({ label: 'Fill in my details', type: 'form', form: 'booking' });
+    if (bookingStage === 5) {
+      // Stage 5: Time selection
+      buttons.push({ label: 'Pick a Time', type: 'time-picker' });
       return buttons;
     }
 
-    // Alternative time offered
-    if (text.includes('how about') && (text.includes('am') || text.includes('pm') || text.includes(':'))) {
+    // NOT IN BOOKING FLOW - use simple detection for general conversation
+    // This handles non-booking scenarios
+
+    // Pricing questions
+    if (text.includes('pricing') || text.includes('cost') || text.includes('price')) {
       buttons.push(
-        { label: 'That works', query: 'Yes, that works for me' },
-        { label: 'Different time', query: 'Can we try a different time?' }
+        { label: 'Book pricing call', query: 'Can I book a call to discuss pricing?' },
+        { label: 'What affects price?', query: 'What factors affect the pricing?' }
       );
       return buttons;
     }
 
-    // Mentioned products - offer to learn more
+    // Product info (not booking)
     if (text.includes('7 smart products') || text.includes('seven smart')) {
       buttons.push(
         { label: 'SMART Prospectus', query: 'Tell me about SMART Prospectus' },
@@ -674,42 +743,19 @@
       return buttons;
     }
 
-
-    // In-person meeting - need to ask location
-    if (text.includes('in person') || text.includes('in-person') || text.includes('meet you') || text.includes('visit')) {
-      if (text.includes('where') || text.includes('location')) {
-        // Emily is asking for location - no buttons needed, they type
-      } else if (!text.includes('booked')) {
-        buttons.push(
-          { label: 'At my school', query: 'Can you come to my school?' },
-          { label: 'At your office', query: 'I can visit your office' },
-          { label: 'Actually, Teams is fine', query: "Actually let's do a Teams call instead" }
-        );
-        return buttons;
-      }
-    }
-
-    // Successfully booked - DON'T show any buttons
-    // The booking is complete, no need for more options
-    if (text.includes('booked') && text.includes('calendar invite')) {
-      return buttons; // Return empty - no buttons needed after booking confirmed
-    }
-
-    // Pricing mentioned
-    if (text.includes('pricing') || text.includes('cost') || text.includes('price')) {
+    // Alternative time offered (during booking)
+    if (text.includes('how about') && (text.includes('am') || text.includes('pm') || text.includes(':'))) {
       buttons.push(
-        { label: 'Book pricing call', query: 'Can I book a call to discuss pricing?' },
-        { label: 'What affects price?', query: 'What factors affect the pricing?' }
+        { label: 'That works', query: 'Yes, that works for me' },
+        { label: 'Different time', query: 'Can we try a different time?' }
       );
       return buttons;
     }
 
-    // General conversation - offer main actions (but NOT if we're mid-booking)
-    if (buttons.length === 0 && text.length > 50) {
-      // Don't show generic buttons if Emily is asking for specific info
+    // General fallback - only if not in booking flow and it's a substantial response
+    if (bookingStage === null && buttons.length === 0 && text.length > 50) {
       const isAskingForInfo = text.includes('could you') || text.includes('please share') ||
-                              text.includes('please specify') || text.includes('what time') ||
-                              text.includes('which day') || text.includes('your name') ||
+                              text.includes('please specify') || text.includes('your name') ||
                               text.includes('your email');
       if (!isAskingForInfo) {
         buttons.push(
