@@ -595,14 +595,24 @@
       return buttons;
     }
 
-    // SECOND: If Emily is ONLY asking about date/time (user already chose meeting type)
-    // DON'T show any buttons - let user type their preference
+    // Emily asking about PRODUCTS - show product options
+    if (text.includes('which products') || text.includes('what products') ||
+        text.includes('interested in discussing') || text.includes('products are you interested')) {
+      buttons.push(
+        { label: 'SMART Prospectus', query: 'SMART Prospectus' },
+        { label: 'SMART Chat', query: 'SMART Chat' },
+        { label: 'SMART Voice', query: 'SMART Voice' },
+        { label: 'Full Platform', query: 'I want to see the full platform' }
+      );
+      return buttons;
+    }
+
+    // If Emily is asking about date/time ONLY - no buttons, let user type
     if (text.includes('when would') || text.includes('what time') || text.includes('what day') ||
         text.includes('what date') || text.includes('suit you') ||
         text.includes('when suits') || text.includes('when works') ||
-        text.includes('specify a day') || text.includes('which day') || text.includes('specific day') ||
         text.includes('works best')) {
-      return buttons; // Empty - no buttons when asking about scheduling
+      return buttons;
     }
 
     // Asking for contact details - show form button
