@@ -313,6 +313,16 @@
     window.bookDemoWithEmily = function() {
       window.openEmilyWithMessage("I'd like to book a demo with Bob");
     };
+
+    // Shortcut for discussing options
+    window.discussOptionsWithEmily = function() {
+      window.openEmilyWithMessage("I'd like to discuss which products might be right for my school");
+    };
+
+    // See Emily in Action - demo mode with More House as example
+    window.seeEmilyInAction = function() {
+      window.openEmilyWithMessage("I'd like to see Emily in action - can you show me a demo?");
+    };
   }
 
   // =========================================================================
@@ -556,6 +566,17 @@
   function getSmartButtons(responseText) {
     const text = responseText.toLowerCase();
     const buttons = [];
+
+    // Demo request - offer voice or chat experience
+    if (text.includes('demo') && (text.includes('voice') || text.includes('chat') || text.includes('try') ||
+        text.includes('show') || text.includes('experience') || text.includes('action'))) {
+      buttons.push(
+        { label: '🎤 Try Voice Demo', query: "I'd like to try the voice demo with a real school example" },
+        { label: '💬 Try Chat Demo', query: "I'd like to try the chat demo with a real school example" },
+        { label: '📅 Book a Call Instead', query: "Actually, I'd prefer to book a call with Bob" }
+      );
+      return buttons;
+    }
 
     // Booking flow - asking for time
     if (text.includes('when would') || text.includes('what time') || text.includes('what day') ||
