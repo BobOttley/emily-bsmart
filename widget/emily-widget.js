@@ -578,13 +578,30 @@
       return buttons;
     }
 
-    // Booking flow - Emily is asking for time preference
-    // DON'T show ANY buttons - let the user type their preferred date/time
+    // FIRST: Check if Emily is asking about meeting type (Teams vs In-Person)
+    // This takes priority over date/time questions
+    const isAskingMeetingType = text.includes('teams or in person') ||
+                                 text.includes('teams or in-person') ||
+                                 text.includes('teams video call, or') ||
+                                 text.includes('prefer a teams') ||
+                                 text.includes('meet in person') ||
+                                 text.includes('would you like to meet');
+
+    if (isAskingMeetingType) {
+      buttons.push(
+        { label: 'Teams Call', query: "I'd like a Teams video call" },
+        { label: 'Visit In Person', query: "I'd prefer to meet in person" }
+      );
+      return buttons;
+    }
+
+    // SECOND: If Emily is ONLY asking about date/time (user already chose meeting type)
+    // DON'T show any buttons - let user type their preference
     if (text.includes('when would') || text.includes('what time') || text.includes('what day') ||
-        text.includes('what date') || text.includes('suit you') || text.includes('video call') ||
+        text.includes('what date') || text.includes('suit you') ||
         text.includes('when suits') || text.includes('when works') ||
         text.includes('specify a day') || text.includes('which day') || text.includes('specific day') ||
-        text.includes('works best') || text.includes('teams call')) {
+        text.includes('works best')) {
       return buttons; // Empty - no buttons when asking about scheduling
     }
 
@@ -616,21 +633,6 @@
       return buttons;
     }
 
-    // Teams vs In-Person - ONLY show when Emily is SPECIFICALLY asking about meeting type
-    // Must contain phrases like "teams or in person", "video call or", "prefer to meet"
-    const isAskingMeetingType = text.includes('teams or in person') ||
-                                 text.includes('teams or in-person') ||
-                                 text.includes('video call or') ||
-                                 text.includes('prefer a teams') ||
-                                 text.includes('would you like to meet via');
-
-    if (isAskingMeetingType) {
-      buttons.push(
-        { label: 'Teams Call', query: "I'd like a Teams video call" },
-        { label: 'Visit In Person', query: "I'd prefer to meet in person" }
-      );
-      return buttons;
-    }
 
     // In-person meeting - need to ask location
     if (text.includes('in person') || text.includes('in-person') || text.includes('meet you') || text.includes('visit')) {
