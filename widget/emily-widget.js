@@ -217,7 +217,6 @@
       <!-- Proactive Bubble (appears outside chat) -->
       <div id="emily-proactive-bubble" class="emily-bubble-hidden">
         <button id="emily-bubble-close" aria-label="Dismiss">&times;</button>
-        <div id="emily-bubble-avatar">E</div>
         <div id="emily-bubble-content">
           <div id="emily-bubble-typing">
             <span></span><span></span><span></span>
@@ -1510,21 +1509,6 @@
       #emily-bubble-close:hover {
         background: #f0f0f0;
         color: #333;
-      }
-
-      #emily-bubble-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--emily-primary), var(--emily-accent));
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 18px;
-        flex-shrink: 0;
-        box-shadow: 0 2px 8px rgba(255,159,28,0.3);
       }
 
       #emily-bubble-content {
