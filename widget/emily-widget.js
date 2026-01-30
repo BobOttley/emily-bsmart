@@ -800,15 +800,16 @@
         right: 20px;
         max-width: 280px;
         padding: 14px 40px 14px 16px;
-        background: var(--emily-primary);
-        color: #fff;
+        background: #fff;
+        color: #333;
         border-radius: 16px 16px 4px 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
         z-index: 999999;
         font-size: 14px;
         line-height: 1.4;
         cursor: pointer;
         animation: emily-bubbleIn 0.3s ease-out;
+        border: 1px solid #e0e0e0;
       }
       #emily-bubble.emily-bubble-hidden {
         display: none;
@@ -819,7 +820,7 @@
         right: 8px;
         background: none;
         border: none;
-        color: rgba(255,255,255,0.7);
+        color: #999;
         font-size: 18px;
         cursor: pointer;
         padding: 0;
@@ -830,7 +831,7 @@
         justify-content: center;
       }
       #emily-bubble-close:hover {
-        color: #fff;
+        color: #333;
       }
       @keyframes emily-bubbleIn {
         from { transform: translateY(10px) scale(0.95); opacity: 0; }
